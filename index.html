@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
     <title>Interval Walking</title>
-    <!-- Link til manifest for PWA-funktionalitet og skærmlås -->
     <link rel="manifest" href="manifest.json">
     <style>
         :root {
@@ -65,8 +64,12 @@
         .day-name { font-size: 0.8rem; color: var(--text-secondary); }
         .workout-day { background-color: var(--ring-normal); color: var(--bg-color); cursor: pointer; font-weight: bold; }
         #session-details { min-height: 120px; margin-top: 15px; border-top: 1px solid #444; padding-top: 10px; text-align: left;}
-        .graph-container { width: 100%; margin-top: 10px; } .graph-container svg { width: 100%; height: auto; }
+        .graph-container { width: 100%; margin: 10px 0; } .graph-container svg { width: 100%; height: auto; }
         #multi-day-chart-container { margin-bottom: 20px; }
+        
+        /* IMPROVEMENT: Cleaner layout for cadence details */
+        .cadence-container { display: flex; justify-content: space-around; text-align: center; margin: 10px 0; }
+        .cadence-item { flex: 1; padding: 0 5px; }
 
         #orientation-lock-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -105,10 +108,9 @@
             .day-name { font-size: 3vw; }
             .calendar-day { font-size: 4vw; }
             #session-details h4 { font-size: 5vw; }
-            #session-details p, #session-details .cadence-info { font-size: 4vw; } /* Scaled up cadence info */
+            #session-details p, .cadence-item { font-size: 4vw; }
             #info-body h3 { font-size: 5.5vw; }
             #info-body p, #info-body li { font-size: 4vw; line-height: 1.5; }
-            /* Scaled up encouragement modal text */
             #encouragement-modal #modal-title { font-size: 7vw; }
             #encouragement-modal #encouragement-text { font-size: 5vw; line-height: 1.5; }
         }
@@ -178,7 +180,7 @@
         const translations = {
             en: {
                 get_ready: "Get Ready", info_title: "About Interval Walking", steps: "Steps:", total_remaining: "Total remaining",
-                cadence: "Cadence (steps/min)", last_7_days: "Last 7 Days Steps",
+                cadence: "steps/min", last_7_days: "Last 7 Days Steps",
                 debug_mode: "Debug Mode (60s)", modal_complete: "Workout Complete!",
                 settings: "Settings", language: "Language", voice_coaching: "Voice Coaching", stats: "Statistics",
                 no_history: "No completed sessions yet.",
@@ -191,14 +193,14 @@
                 speak_2_min: "2 minutes", speak_1_min: "1 minute", speak_30_sec: "30 seconds",
                 encouragement: ["Every step is a victory.", "You are nurturing your body and soul.", "Well done!"],
                 rotate_device_title: "Please rotate your device",
-                info_text: `<h3>Discover Japanese Interval Walking</h3><p>Welcome to a smarter way to walk! This is a powerful, science-backed method perfected by researchers in Japan. It alternates between bursts of speed and periods of active recovery to transform your health more effectively than a standard walk.</p><h3>Your 30-Minute Workout Plan</h3><p>The structure is simple but incredibly effective. You will repeat a 6-minute cycle five times.</p><p><strong>1. The High-Intensity Phase (3 Minutes)</strong><br>Your goal is to push your pace to about 70-80% of your personal maximum. You should be breathing noticeably and find it challenging to hold a long conversation.</p><p><strong>2. The Recovery Phase (3 Minutes)</strong><br>Ease back to a comfortable, gentle stroll, around 40-50% of your effort. This is your chance to catch your breath while keeping your body moving.</p><h3>Unlock Your Health Benefits</h3><p>This method is designed to deliver comprehensive results:</p><ul><li>❤️ Boost Your Heart Health</li><li>💪 Build Stronger Muscles</li><li>⚡ Supercharge Your Metabolism</li><li>🧠 Enhance Your Mental Clarity</li></ul><h3>Backed by Science</h3><p>This method was pioneered by Dr. Hiroshi Nose and his team at Shinshu University in Japan. A landmark study showed that after just 5 months, participants saw a 9% average increase in aerobic fitness and a 13% boost in leg strength.</p><h3>The Philosophy of Progress</h3><p>This workout embodies two beautiful Japanese concepts: <em>Kaizen (改善)</em>, the principle of continuous improvement, and <em>Wabi-Sabi (侘寂)</em>, finding beauty in the journey. Progress, not perfection, is the goal.</p><p>Ready to start? Let's take the first step together!</p>`,
+                info_text: `<h3>Discover Japanese Interval Walking</h3><p>This is a powerful, science-backed method that alternates between bursts of speed and periods of active recovery to transform your health.</p><h3>Your 30-Minute Workout Plan</h3><p>You will repeat a 6-minute cycle five times.</p><p><strong>1. High-Intensity (3 Min):</strong> Push your pace to 70-80% of your maximum. Breathing should be heavy.</p><p><strong>2. Recovery (3 Min):</strong> Ease back to a gentle stroll at 40-50% effort to catch your breath.</p><h3>Benefits</h3><ul><li>Boost Your Heart Health</li><li>Build Stronger Muscles</li><li>Supercharge Your Metabolism</li></ul><p>Ready to start? Let's take the first step together!</p>`,
                 sensor_permission: "To count your steps, this app needs access to your device's motion sensors. Please 'Allow' when prompted.",
                 sensor_denied: "Motion sensor access was denied. Step counting will be simulated. To enable real step counting, please grant permission in your browser settings.",
                 sensor_unavailable: "Real step counting is not supported on this device/browser. Steps will be simulated."
             },
             da: {
                 get_ready: "Gør klar", info_title: "Om Intervalgang", steps: "Skridt:", total_remaining: "Total tilbage",
-                cadence: "Kadence (skridt/min)", last_7_days: "Sidste 7 dages skridt",
+                cadence: "skridt/min", last_7_days: "Sidste 7 dages skridt",
                 debug_mode: "Testtilstand (60s)", modal_complete: "Træning færdig!",
                 settings: "Indstillinger", language: "Sprog", voice_coaching: "Stemmecoaching", stats: "Statistik",
                 no_history: "Ingen gennemførte træninger endnu.",
@@ -211,7 +213,7 @@
                 speak_2_min: "To minutter", speak_1_min: "Et minut", speak_30_sec: "Tredive sekunder",
                 encouragement: ["Hvert skridt er en sejr.", "Du nærer din krop og sjæl.", "Godt klaret!"],
                 rotate_device_title: "Vend venligst din enhed",
-                info_text: `<h3>Opdag Japansk Intervalgang</h3><p>Velkommen til en smartere måde at gå på! Dette er en kraftfuld, videnskabeligt underbygget metode, perfektioneret af forskere i Japan. Den veksler mellem hurtige ryk og perioder med aktiv restitution for at forbedre dit helbred mere effektivt end en almindelig gåtur.</p><h3>Din 30-Minutters Træningsplan</h3><p>Strukturen er simpel, men utroligt effektiv. Du vil gentage en 6-minutters cyklus fem gange.</p><p><strong>1. Høj-Intensitets Fasen (3 Minutter)</strong><br>Dit mål er at presse dit tempo op til omkring 70-80% af dit personlige maksimum. Din vejrtrækning bør være mærkbart hurtigere, og det skal være svært at føre en lang samtale.</p><p><strong>2. Restitutionsfasen (3 Minutter)</strong><br>Sænk tempoet til en behagelig, rolig gåtur, omkring 40-50% af din indsats. Dette er din chance for at få vejret igen, mens du holder kroppen i gang.</p><h3>Opnå Dine Sundhedsfordele</h3><p>Denne metode er designet til at levere omfattende resultater:</p><ul><li>❤️ Styrk Dit Hjerte</li><li>💪 Opbyg Stærkere Muskler</li><li>⚡ Giv Dit Stofskifte et Boost</li><li>🧠 Forbedr Din Mentale Klarhed</li></ul><h3>Bakket op af Videnskab</h3><p>Metoden blev udviklet af Dr. Hiroshi Nose og hans team ved Shinshu Universitet i Japan. Et banebrydende studie viste, at deltagere efter blot 5 måneder opnåede en gennemsnitlig forbedring på 9% i kondition og 13% i benstyrke.</p><h3>Filosofien om Fremskridt</h3><p>Denne træning omfavner to smukke japanske koncepter: <em>Kaizen (改善)</em>, princippet om kontinuerlig forbedring, og <em>Wabi-Sabi (侘寂)</em>, at finde skønhed i rejsen. Fremskridt, ikke perfektion, er målet.</p><p>Klar til at starte? Lad os tage det første skridt sammen!</p>`,
+                info_text: `<h3>Opdag Japansk Intervalgang</h3><p>Dette er en kraftfuld, videnskabeligt underbygget metode, der veksler mellem hurtige ryk og aktiv restitution for at forbedre dit helbred.</p><h3>Din 30-Minutters Plan</h3><p>Du vil gentage en 6-minutters cyklus fem gange.</p><p><strong>1. Høj-Intensitet (3 Min):</strong> Pres dit tempo til 70-80% af dit maksimum. Din vejrtrækning skal være hurtig.</p><p><strong>2. Restitution (3 Min):</strong> Sænk tempoet til en rolig gåtur på 40-50% indsats for at få vejret igen.</p><h3>Fordele</h3><ul><li>Styrk dit hjerte</li><li>Opbyg stærkere muskler</li><li>Giv dit stofskifte et boost</li></ul><p>Klar til at starte? Lad os tage det første skridt sammen!</p>`,
                 sensor_permission: "For at tælle dine skridt skal denne app have adgang til din enheds bevægelsessensorer. Tillad venligst adgang, når du bliver spurgt.",
                 sensor_denied: "Adgang til bevægelsessensorer blev nægtet. Skridttælling vil blive simuleret. For at aktivere rigtig skridttælling, giv venligst tilladelse i din browsers indstillinger.",
                 sensor_unavailable: "Rigtig skridttælling understøttes ikke på denne enhed/browser. Skridt vil blive simuleret."
@@ -416,11 +418,20 @@
                 
                 timer = setInterval(() => {
                     if (!isRunning) { clearInterval(timer); return; }
+                    
                     totalSeconds--;
-                    if (totalSeconds < 0) { workoutComplete(); return; }
-                    updateUIDisplay(); 
+                    updateUIDisplay();
+
+                    // BUG FIX: Check for completion with <= 0 to prevent a new interval on the final second.
+                    if (totalSeconds <= 0) {
+                        workoutComplete();
+                        // And return immediately to stop further processing.
+                        return;
+                    }
+
                     const intervalLength = getDuration() / (getDuration() === debugDuration ? 2 : 10);
                     const timeElapsed = getDuration() - totalSeconds;
+                    
                     if(getDuration() >= 1800){ 
                         const intervalTimeRemaining = intervalLength - (timeElapsed % intervalLength);
                         if (intervalTimeRemaining === 120) scheduleAudio(() => speak('speak_2_min'));
@@ -441,7 +452,7 @@
             if (window.navigator.vibrate) window.navigator.vibrate([500, 100, 500]);
             
             const finishedSession = { ...currentSession }; 
-            if (finishedSession.intervals) { 
+            if (finishedSession.intervals && elements.intervalDisplay.textContent !== languageManager.get('get_ready')) { 
                 finishedSession.intervals.push({ type: elements.intervalDisplay.textContent, steps: finishedSession.stepsInInterval });
                 saveSessionHistory(finishedSession);
             }
@@ -518,45 +529,28 @@
         }
         
         function createMultiDayStepChart(history, numDays) {
-            const dataByDay = {};
-            const today = new Date();
+            const dataByDay = {}; const today = new Date();
             today.setHours(0, 0, 0, 0);
-
             for (let i = 0; i < numDays; i++) {
                 const date = new Date(today);
                 date.setDate(today.getDate() - i);
                 dataByDay[date.toDateString()] = { steps: 0, date: date };
             }
-
             history.forEach(session => {
                 const sessionDate = new Date(session.date);
                 sessionDate.setHours(0, 0, 0, 0);
-                if (dataByDay[sessionDate.toDateString()]) {
-                    dataByDay[sessionDate.toDateString()].steps += session.totalSteps || 0;
-                }
+                if (dataByDay[sessionDate.toDateString()]) dataByDay[sessionDate.toDateString()].steps += session.totalSteps || 0;
             });
-
             const chartData = Object.values(dataByDay).sort((a, b) => a.date - b.date);
-            const maxSteps = Math.max(...chartData.map(d => d.steps), 1000); // Minimum axis of 1000 steps
+            const maxSteps = Math.max(...chartData.map(d => d.steps), 1000);
             const width = 300, height = 150, barWidth = width / numDays;
-
             const bars = chartData.map((data, i) => {
-                const barHeight = (data.steps / maxSteps) * (height - 20); // leave space for labels
-                const x = i * barWidth;
-                const y = height - barHeight - 20;
+                const barHeight = (data.steps / maxSteps) * (height - 20);
+                const x = i * barWidth, y = height - barHeight - 20;
                 const dayLabel = data.date.toLocaleDateString(languageManager.lang, { weekday: 'short' });
-                return `
-                    <g>
-                        <rect x="${x + barWidth * 0.1}" y="${y}" width="${barWidth * 0.8}" height="${barHeight}" fill="var(--ring-normal)" rx="2"></rect>
-                        <text x="${x + barWidth / 2}" y="${height - 5}" font-size="10" fill="var(--text-secondary)" text-anchor="middle">${dayLabel}</text>
-                    </g>
-                `;
+                return `<g><rect x="${x + barWidth * 0.1}" y="${y}" width="${barWidth * 0.8}" height="${barHeight}" fill="var(--ring-normal)" rx="2"></rect><text x="${x + barWidth / 2}" y="${height - 5}" font-size="10" fill="var(--text-secondary)" text-anchor="middle">${dayLabel}</text></g>`;
             }).join('');
-
-            return `
-                <h4 style="text-align: left; margin-bottom: 5px;">${languageManager.get('last_7_days')}</h4>
-                <svg viewBox="0 0 ${width} ${height}" style="width: 100%; height: auto;">${bars}</svg>
-            `;
+            return `<h4 style="text-align: left; margin-bottom: 5px;">${languageManager.get('last_7_days')}</h4><svg viewBox="0 0 ${width} ${height}" style="width: 100%; height: auto;">${bars}</svg>`;
         }
         
         function renderCalendar(date) {
@@ -572,8 +566,7 @@
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             for (let i = 0; i < firstDayOfMonth; i++) { elements.calendarGrid.appendChild(document.createElement('div')); }
             for (let day = 1; day <= daysInMonth; day++) {
-                const dayEl = document.createElement('div');
-                dayEl.className = 'calendar-day'; dayEl.textContent = day;
+                const dayEl = document.createElement('div'); dayEl.className = 'calendar-day'; dayEl.textContent = day;
                 const currentDate = new Date(year, month, day);
                 if (workoutDates.has(currentDate.toDateString())) {
                     dayEl.classList.add('workout-day');
@@ -583,7 +576,7 @@
             }
         }
         
-        function createBarChart(intervals, w, h) { if (!intervals || intervals.length === 0) return ''; const max = Math.max(...intervals.map(i => i.steps), 1); const bw = w / intervals.length; const bars = intervals.map((v, i) => `<rect x="${i*bw}" y="${h-(v.steps/max)*h}" width="${bw*0.9}" height="${(v.steps/max)*h}" fill="${v.type.toLowerCase().includes('fast') || v.type.toLowerCase().includes('hurtig') ? 'var(--ring-fast)' : 'var(--ring-normal)'}" rx="2"/>`).join(''); return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${bars}</svg>`; }
+        function createBarChart(intervals, w, h) { if (!intervals || intervals.length === 0) return ''; const max = Math.max(...intervals.map(i => i.steps), 1); const bw = w / intervals.length; const bars = intervals.map((v, i) => `<rect x="${i*bw}" y="${h-(v.steps/max)*h}" width="${bw*0.8}" height="${(v.steps/max)*h}" fill="${v.type.toLowerCase().includes('fast') || v.type.toLowerCase().includes('hurtig') ? 'var(--ring-fast)' : 'var(--ring-normal)'}" rx="2"/>`).join(''); return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMax meet">${bars}</svg>`; }
         
         function showStats() {
             statsDate = new Date(); calculateAndShowSummaryStats(); renderCalendar(statsDate);
@@ -595,23 +588,21 @@
             const sessionForDay = history.filter(s => new Date(s.date).toDateString() === date.toDateString()).pop();
             if (!sessionForDay) return;
 
-            const intervalDurationMinutes = (sessionForDay.duration / (sessionForDay.duration === debugDuration ? 2 : 10)) / 60;
+            const intervalDurationMinutes = (sessionForDay.duration / (getDuration() === debugDuration ? 2 : 10)) / 60;
             let fastSteps = 0, normalSteps = 0, fastIntervals = 0, normalIntervals = 0;
             sessionForDay.intervals.forEach(interval => {
-                if (interval.type.toLowerCase().includes('fast') || interval.type.toLowerCase().includes('hurtig')) {
-                    fastSteps += interval.steps; fastIntervals++;
-                } else {
-                    normalSteps += interval.steps; normalIntervals++;
-                }
+                if (interval.type.toLowerCase().includes('fast') || interval.type.toLowerCase().includes('hurtig')) { fastSteps += interval.steps; fastIntervals++; } 
+                else { normalSteps += interval.steps; normalIntervals++; }
             });
             const fastCadence = fastIntervals > 0 ? (fastSteps / (fastIntervals * intervalDurationMinutes)).toFixed(0) : 0;
             const normalCadence = normalIntervals > 0 ? (normalSteps / (normalIntervals * intervalDurationMinutes)).toFixed(0) : 0;
 
             let detailsHTML = `<h4>${date.toLocaleDateString(languageManager.lang, {weekday: 'long', day: 'numeric', month: 'long'})}</h4>`;
             detailsHTML += `<p>${languageManager.get('total_steps')}: ${sessionForDay.totalSteps.toLocaleString(languageManager.lang)}</p>`;
-            detailsHTML += `<div class="cadence-info" style="display: flex; justify-content: space-around; margin: 10px 0;">
-                <div><strong>${languageManager.get('speak_fast')}:</strong><br>${fastCadence} ${languageManager.get('cadence')}</div>
-                <div><strong>${languageManager.get('speak_normal')}:</strong><br>${normalCadence} ${languageManager.get('cadence')}</div>
+            // IMPROVEMENT: Cleaner layout for cadence details
+            detailsHTML += `<div class="cadence-container">
+                <div class="cadence-item"><strong>${languageManager.get('speak_fast')}</strong><br>${fastCadence} ${languageManager.get('cadence')}</div>
+                <div class="cadence-item"><strong>${languageManager.get('speak_normal')}</strong><br>${normalCadence} ${languageManager.get('cadence')}</div>
             </div>`;
             detailsHTML += `<div class="graph-container">${createBarChart(sessionForDay.intervals, 200, 80)}</div>`;
             elements.sessionDetails.innerHTML = detailsHTML;
@@ -638,18 +629,11 @@
             if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = populateVoices;
             loadSettings();
             resetUI();
-            
-            // Attempt to lock screen orientation to portrait
             try {
                 if (screen.orientation && screen.orientation.lock) {
-                    screen.orientation.lock('portrait-primary').catch(err => {
-                        // This might fail if not in fullscreen or not supported, which is okay.
-                        console.log("Screen orientation lock failed:", err);
-                    });
+                    screen.orientation.lock('portrait-primary').catch(err => { console.log("Screen orientation lock failed:", err); });
                 }
-            } catch (err) {
-                console.error("Screen Orientation API not supported.", err);
-            }
+            } catch (err) { console.error("Screen Orientation API not supported.", err); }
         };
     </script>
 </body>
