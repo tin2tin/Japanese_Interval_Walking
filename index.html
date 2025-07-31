@@ -17,7 +17,7 @@
             margin: 0; padding: 0; display: flex; flex-direction: column;
             justify-content: space-between; align-items: center; height: 100vh;
             background-color: var(--bg-color); color: var(--text-color); -webkit-tap-highlight-color: transparent;
-            overflow: hidden; /* Prevent scrolling on mobile */
+            overflow: hidden;
         }
         .top-bar-icon { position: absolute; top: 20px; cursor: pointer; z-index: 100; fill: var(--icon-color); width: 32px; height: 32px;}
         #settings-button { right: 20px; } #stats-button { left: 20px; } #info-button { left: 60px; }
@@ -63,14 +63,38 @@
         #session-details { min-height: 120px; margin-top: 15px; border-top: 1px solid #444; padding-top: 10px; text-align: left;}
         .graph-container { width: 100%; margin-top: 10px; } .graph-container svg { width: 100%; height: auto; }
 
-        /* Android Scaling */
-        body.android-scale .main-container { justify-content: center; }
-        body.android-scale #dial-container { width: 85vw; height: 85vw; }
-        body.android-scale #interval-timer-display { font-size: 20vw; }
-        body.android-scale #interval-display { font-size: 5vw; }
-        body.android-scale #total-time-display { font-size: 3.5vw; }
-        body.android-scale #steps-display { font-size: 4.5vw; }
-        body.android-scale #start-stop-button { width: 18vw; height: 18vw; max-width: 90px; max-height: 90px; }
+        /* SCALING FOR TOUCH DEVICES */
+        body.touch-device-scale .main-container {
+            justify-content: center; /* Better vertical alignment on mobile */
+        }
+        body.touch-device-scale #dial-container {
+            width: 85vw; /* Use 85% of the viewport width */
+            height: 85vw; /* Keep it a circle */
+        }
+        body.touch-device-scale #interval-timer-display {
+            font-size: 20vw;
+        }
+        body.touch-device-scale #interval-display {
+            font-size: 5vw;
+        }
+        body.touch-device-scale #total-time-display {
+            font-size: 3.5vw;
+        }
+        body.touch-device-scale #steps-display {
+            font-size: 4.5vw;
+        }
+        body.touch-device-scale #start-stop-button {
+            width: 18vw;
+            height: 18vw;
+            max-width: 90px;  /* Add a max size to prevent it from getting too big */
+            max-height: 90px;
+        }
+        body.touch-device-scale #status-container, body.touch-device-scale #interval-icon {
+             /* Scale up the icons in the status bar as well */
+            transform: scale(1.2);
+            margin-bottom: 5px;
+        }
+
     </style>
 </head>
 <body>
@@ -219,13 +243,16 @@
         function getDuration() { return elements.debugModeSwitch.checked ? debugDuration : fullDuration; }
         
         function updateUIDisplay() {
-            const totalMinutes = Math.floor(totalSeconds / 60); const totalSecs = totalSeconds % 60;
+            const displaySeconds = Math.max(0, totalSeconds);
+            const totalMinutes = Math.floor(displaySeconds / 60); 
+            const totalSecs = displaySeconds % 60;
             elements.totalTimeDisplay.textContent = `${languageManager.get('total_remaining')}: ${totalMinutes.toString().padStart(2, '0')}:${totalSecs.toString().padStart(2, '0')}`;
             
             const intervalLength = getDuration() / (getDuration() === debugDuration ? 2 : 10);
-            let intervalTimeRemaining = intervalLength - ((getDuration() - totalSeconds) % intervalLength);
+            let intervalTimeRemaining = intervalLength - ((getDuration() - displaySeconds) % intervalLength);
             
-            const intervalMinutes = Math.floor(intervalTimeRemaining / 60); const intervalSecs = intervalTimeRemaining % 60;
+            const intervalMinutes = Math.floor(intervalTimeRemaining / 60); 
+            const intervalSecs = intervalTimeRemaining % 60;
             elements.timerDisplay.textContent = `${intervalMinutes.toString().padStart(2, '0')}:${intervalSecs.toString().padStart(2, '0')}`;
             
             const percent = (intervalTimeRemaining / intervalLength) * 100;
@@ -234,7 +261,8 @@
 
         function updateIntervalState(isInitialCall = false) {
             if (!isRunning) return;
-            const duration = getDuration(), timeElapsed = duration - totalSeconds;
+            const duration = getDuration();
+            const timeElapsed = duration - totalSeconds;
             const intervalLength = duration / (getDuration() === debugDuration ? 2 : 10);
             const intervalIndex = Math.floor(timeElapsed / intervalLength);
             const isFast = intervalIndex % 2 === 0;
@@ -276,13 +304,15 @@
                     totalSeconds = getDuration();
                     currentSession = { date: new Date().toISOString(), duration: getDuration(), totalSteps: 0, stepsInInterval: 0, intervals: [] };
                     scheduleAudio(() => speak('speak_starting'), true);
+                    scheduleAudio(() => speak('speak_fast'), true);
                     updateIntervalState(true);
                 }
                 
                 timer = setInterval(() => {
                     if (!isRunning) { clearInterval(timer); return; }
-                    totalSeconds--;
                     
+                    totalSeconds--;
+
                     if (totalSeconds < 0) {
                         workoutComplete();
                         return;
@@ -291,24 +321,36 @@
                     updateUIDisplay(); 
                     
                     const intervalLength = getDuration() / (getDuration() === debugDuration ? 2 : 10);
-                    const intervalTimeRemaining = Math.round(intervalLength - ((getDuration() - totalSeconds) % intervalLength));
+                    const timeElapsed = getDuration() - totalSeconds;
                     
-                    if(intervalLength === 180){ // Only for 3-minute intervals
-                        if (intervalTimeRemaining === 120) scheduleAudio(() => speak('speak_2_min'));
-                        if (intervalTimeRemaining === 60) scheduleAudio(() => speak('speak_1_min'));
-                        if (intervalTimeRemaining === 30) scheduleAudio(() => speak('speak_30_sec'));
+                    const intervalTimeRemaining = intervalLength - (timeElapsed % intervalLength);
+                    if(intervalLength === 180){ 
+                        const paceKey = elements.intervalDisplay.textContent === languageManager.get('speak_fast') ? 'speak_fast' : 'speak_normal';
+                        if (intervalTimeRemaining === 120) {
+                            scheduleAudio(() => speak('speak_2_min'));
+                            scheduleAudio(() => speak(paceKey));
+                        }
+                        if (intervalTimeRemaining === 60) {
+                            scheduleAudio(() => speak('speak_1_min'));
+                            scheduleAudio(() => speak(paceKey));
+                        }
+                        if (intervalTimeRemaining === 30) {
+                            scheduleAudio(() => speak('speak_30_sec'));
+                            scheduleAudio(() => speak(paceKey));
+                        }
                     }
-
-                    if ( (getDuration() - totalSeconds) % intervalLength === 0) updateIntervalState();
                     if (totalSeconds === Math.floor(getDuration() / 2)) scheduleAudio(() => speak('speak_halfway'));
-
+                    
+                    if (timeElapsed > 0 && timeElapsed % intervalLength === 0) {
+                         updateIntervalState();
+                    }
                 }, 1000);
 
                 paceCheckInterval = setInterval(() => {
                     if (!isRunning) { clearInterval(paceCheckInterval); return; }
                     const isFast = elements.intervalDisplay.textContent === languageManager.get('speak_fast');
                     stepsPerMinute = isFast ? Math.floor(Math.random()*20)+110 : Math.floor(Math.random()*10)+70;
-                    const stepsThisTick = Math.round(stepsPerMinute / 12); // Fired every 5 seconds (60/5=12)
+                    const stepsThisTick = Math.round(stepsPerMinute / 12); 
                     if(currentSession) { 
                         currentSession.totalSteps += stepsThisTick; 
                         currentSession.stepsInInterval += stepsThisTick;
@@ -320,9 +362,8 @@
         }
 
         async function workoutComplete() {
-            if (!isRunning) return; // Prevent double execution
+            if (!isRunning && !currentSession) return;
             
-            isRunning = false;
             clearInterval(timer);
             clearInterval(paceCheckInterval);
 
@@ -343,12 +384,12 @@
 
             if (wakeLock) { await wakeLock.release(); wakeLock = null; }
             
+            isRunning = false;
             currentSession = null;
             resetUI(); 
         }
 
         function resetUI() {
-            isRunning = false; 
             totalSeconds = getDuration();
             elements.startStopButton.querySelector('svg').innerHTML = icons.play;
             elements.startStopButton.style.backgroundColor = 'var(--button-color)';
@@ -402,7 +443,7 @@
                 currentStreak = 1;
                 maxStreak = 1;
                 for (let i = 1; i < uniqueDays.length; i++) {
-                    const day = 86400000; // milliseconds in a day
+                    const day = 86400000;
                     if (uniqueDays[i] - uniqueDays[i-1] === day) {
                         currentStreak++;
                     } else {
@@ -428,7 +469,7 @@
             elements.calendarMonthYear.textContent = new Date(year, month).toLocaleDateString(languageManager.lang, { month: 'long', year: 'numeric' });
             elements.calendarGrid.innerHTML = '';
             
-            const firstDayOfWeek = 1; // Monday
+            const firstDayOfWeek = 1;
             const dayNames = new Array(7).fill(0).map((_, i) => new Date(2024, 0, (i + firstDayOfWeek)).toLocaleDateString(languageManager.lang, { weekday: 'short' }));
             dayNames.forEach(name => {
                 const dayNameEl = document.createElement('div');
@@ -496,9 +537,12 @@
         elements.coachingToggle.addEventListener('change', (e) => { coachingEnabled = e.target.checked; localStorage.setItem('coachingEnabled', coachingEnabled); updateLanguageSelectState(); if(!coachingEnabled) speechSynthesis.cancel(); });
         
         window.onload = () => {
-            if (/android/i.test(navigator.userAgent)) {
-                document.body.classList.add('android-scale');
+            // **IMPROVED**: More robust detection for any touch-capable mobile device.
+            const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || /Mobi/i.test(navigator.userAgent);
+            if (isTouchDevice) {
+                document.body.classList.add('touch-device-scale');
             }
+
             populateVoices();
             if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = populateVoices;
             loadSettings();
