@@ -15,7 +15,10 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0; padding: 0; display: flex; flex-direction: column;
-            justify-content: space-between; align-items: center; height: 100vh;
+            justify-content: space-between; align-items: center;
+            /* Use dynamic viewport height for mobile, with a fallback */
+            height: 100vh;
+            height: 100dvh;
             background-color: var(--bg-color); color: var(--text-color); -webkit-tap-highlight-color: transparent;
             overflow: hidden;
         }
@@ -63,38 +66,30 @@
         #session-details { min-height: 120px; margin-top: 15px; border-top: 1px solid #444; padding-top: 10px; text-align: left;}
         .graph-container { width: 100%; margin-top: 10px; } .graph-container svg { width: 100%; height: auto; }
 
-        /* SCALING FOR TOUCH DEVICES */
-        body.touch-device-scale .main-container {
-            justify-content: center; /* Better vertical alignment on mobile */
+        /* ROBUST SCALING FOR TOUCH DEVICES using a Media Query */
+        @media (hover: none) and (pointer: coarse) {
+            .main-container {
+                justify-content: center;
+            }
+            #dial-container {
+                width: 85vw;
+                height: 85vw;
+            }
+            #interval-timer-display { font-size: 20vw; }
+            #interval-display { font-size: 5vw; }
+            #total-time-display { font-size: 3.5vw; }
+            #steps-display { font-size: 4.5vw; }
+            #start-stop-button {
+                width: 18vw;
+                height: 18vw;
+                max-width: 90px;
+                max-height: 90px;
+            }
+            #status-container, #interval-icon {
+                transform: scale(1.2);
+                margin-bottom: 5px;
+            }
         }
-        body.touch-device-scale #dial-container {
-            width: 85vw; /* Use 85% of the viewport width */
-            height: 85vw; /* Keep it a circle */
-        }
-        body.touch-device-scale #interval-timer-display {
-            font-size: 20vw;
-        }
-        body.touch-device-scale #interval-display {
-            font-size: 5vw;
-        }
-        body.touch-device-scale #total-time-display {
-            font-size: 3.5vw;
-        }
-        body.touch-device-scale #steps-display {
-            font-size: 4.5vw;
-        }
-        body.touch-device-scale #start-stop-button {
-            width: 18vw;
-            height: 18vw;
-            max-width: 90px;  /* Add a max size to prevent it from getting too big */
-            max-height: 90px;
-        }
-        body.touch-device-scale #status-container, body.touch-device-scale #interval-icon {
-             /* Scale up the icons in the status bar as well */
-            transform: scale(1.2);
-            margin-bottom: 5px;
-        }
-
     </style>
 </head>
 <body>
@@ -107,7 +102,8 @@
             <svg id="interval-icon" viewBox="0 0 512 512"></svg>
         </div>
         <div id="dial-container">
-            <svg id="dial-svg">
+            <!-- FIXED: Added viewBox to ensure correct scaling and rendering -->
+            <svg id="dial-svg" viewBox="0 0 280 280">
                 <circle class="dial-ring" id="dial-background" cx="140" cy="140" r="125"></circle>
                 <circle class="dial-ring" id="dial-progress" cx="140" cy="140" r="125"></circle>
             </svg>
@@ -537,12 +533,6 @@
         elements.coachingToggle.addEventListener('change', (e) => { coachingEnabled = e.target.checked; localStorage.setItem('coachingEnabled', coachingEnabled); updateLanguageSelectState(); if(!coachingEnabled) speechSynthesis.cancel(); });
         
         window.onload = () => {
-            // **IMPROVED**: More robust detection for any touch-capable mobile device.
-            const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || /Mobi/i.test(navigator.userAgent);
-            if (isTouchDevice) {
-                document.body.classList.add('touch-device-scale');
-            }
-
             populateVoices();
             if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = populateVoices;
             loadSettings();
