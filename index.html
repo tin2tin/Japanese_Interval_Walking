@@ -28,9 +28,10 @@
         #dial-background { stroke: var(--ring-bg); }
         #dial-progress { stroke: var(--ring-fast); stroke-linecap: round; transition: stroke 1s, stroke-dashoffset 1s linear; }
         #dial-content { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        #interval-display { font-size: 1.5rem; font-weight: bold; color: var(--text-secondary); margin-bottom: -5px; }
-        #interval-timer-display { font-size: 5rem; font-weight: 200; letter-spacing: 2px; }
-        #total-time-display { font-size: 1rem; color: var(--text-secondary); margin-top: -5px; }
+        #interval-display { font-size: 1.5rem; font-weight: bold; color: var(--text-secondary); }
+        #interval-timer-display { font-size: 5rem; font-weight: 200; letter-spacing: 2px; margin-bottom: 5px; }
+        #steps-display { font-size: 1.2rem; color: var(--text-secondary); min-height: 1.5rem; }
+        #total-time-display { font-size: 1rem; color: var(--text-secondary); }
         #start-stop-button { width: 80px; height: 80px; border-radius: 50%; background-color: var(--button-color); color: var(--button-text-color); border: none; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.2); transition: background-color 0.3s; margin-top: 20px; display: flex; justify-content: center; align-items: center; }
         #start-stop-button svg { fill: var(--button-text-color); }
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
@@ -70,10 +71,13 @@
             <div id="dial-content">
                 <div id="interval-display"></div>
                 <div id="interval-timer-display"></div>
+                <div id="steps-display"></div>
                 <div id="total-time-display"></div>
             </div>
         </div>
-        <button id="start-stop-button"></button>
+        <button id="start-stop-button">
+            <svg viewBox="0 0 24 24" width="32" height="32"></svg>
+        </button>
     </div>
     
     <div id="encouragement-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="modal-title"></h2><p id="encouragement-text"></p></div></div>
@@ -84,7 +88,7 @@
     <script>
         const elements = {
             timerDisplay: document.getElementById('interval-timer-display'), totalTimeDisplay: document.getElementById('total-time-display'),
-            intervalDisplay: document.getElementById('interval-display'),
+            intervalDisplay: document.getElementById('interval-display'), stepsDisplay: document.getElementById('steps-display'),
             startStopButton: document.getElementById('start-stop-button'),
             debugLabel: document.getElementById('debug-label'),
             debugModeSwitch: document.getElementById('debug-mode'), modalTitle: document.getElementById('modal-title'),
@@ -106,7 +110,7 @@
         
         const translations = {
             en: {
-                get_ready: "Get Ready", remaining: "remaining", info_title: "About Interval Walking",
+                get_ready: "Get Ready", remaining: "remaining", info_title: "About Interval Walking", steps: "Steps:",
                 debug_mode: "Debug Mode (60s)", modal_complete: "Workout Complete!",
                 settings: "Settings", language: "Language", voice_coaching: "Voice Coaching", stats: "Statistics", 
                 no_history: "No completed sessions yet.", total_steps: "Total Steps", monthly_steps: "Monthly Steps Progression",
@@ -119,7 +123,7 @@
                 info_text: `<h3>Discover Japanese Interval Walking</h3><p>Welcome to a smarter way to walk! This is a powerful, science-backed method perfected by researchers in Japan. It alternates between bursts of speed and periods of active recovery to transform your health more effectively than a standard walk.</p><h3>Your 30-Minute Workout Plan</h3><p>The structure is simple but incredibly effective. You will repeat a 6-minute cycle five times.</p><p><strong>1. The High-Intensity Phase (3 Minutes)</strong><br>Your goal is to push your pace to about 70-80% of your personal maximum. You should be breathing noticeably and find it challenging to hold a long conversation.</p><p><strong>2. The Recovery Phase (3 Minutes)</strong><br>Ease back to a comfortable, gentle stroll, around 40-50% of your effort. This is your chance to catch your breath while keeping your body moving.</p><h3>Unlock Your Health Benefits</h3><p>This method is designed to deliver comprehensive results:</p><ul><li>❤️ Boost Your Heart Health</li><li>💪 Build Stronger Muscles</li><li>⚡ Supercharge Your Metabolism</li><li>🧠 Enhance Your Mental Clarity</li></ul><h3>Backed by Science</h3><p>This method was pioneered by Dr. Hiroshi Nose and his team at Shinshu University in Japan. A landmark study showed that after just 5 months, participants saw a 9% average increase in aerobic fitness and a 13% boost in leg strength.</p><h3>The Philosophy of Progress</h3><p>This workout embodies two beautiful Japanese concepts: <em>Kaizen (改善)</em>, the principle of continuous improvement, and <em>Wabi-Sabi (侘寂)</em>, finding beauty in the journey. Progress, not perfection, is the goal.</p><p>Ready to start? Let's take the first step together!</p>`
             },
             da: {
-                get_ready: "Gør klar", remaining: "tilbage", info_title: "Om Intervalgang",
+                get_ready: "Gør klar", remaining: "tilbage", info_title: "Om Intervalgang", steps: "Skridt:",
                 debug_mode: "Testtilstand (60s)", modal_complete: "Træning færdig!",
                 settings: "Indstillinger", language: "Sprog", voice_coaching: "Stemmecoaching", stats: "Statistik",
                 no_history: "Ingen gennemførte træninger endnu.", total_steps: "Samlede Skridt", monthly_steps: "Månedlig Fremgang i Skridt",
@@ -160,8 +164,8 @@
         const fullDuration = 1800, debugDuration = 60;
         
         const icons = {
-            play: `<svg viewBox="0 0 24 24" width="32" height="32"><path d="M8 5v14l11-7z"/></svg>`,
-            pause: `<svg viewBox="0 0 24 24" width="32" height="32"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`,
+            play: `<path d="M8 5v14l11-7z"/>`,
+            pause: `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`,
             idle: `<g><path d="M256,85.549c23.636,0,42.779-19.158,42.779-42.77C298.778,19.142,279.636,0,256,0 s-42.778,19.142-42.778,42.778C213.221,66.391,232.364,85.549,256,85.549z"/><path d="M312.196,97.623H199.804c-20.725,0-43.274,22.549-43.274,43.282v143.768c0,10.364,8.396,18.767,18.758,18.767 c10.363,0,18.775-8.403,18.775-18.767V166.468h8.651v320.88c0,13.617,11.035,24.651,24.644,24.651 c13.625,0,24.66-11.034,24.66-24.651V301.138h7.964v186.211c0,13.617,11.034,24.651,24.66,24.651 c13.609,0,24.643-11.034,24.643-24.651v-320.88h8.668v118.205c0,10.364,8.396,18.767,18.758,18.767 c10.379,0,18.759-8.403,18.759-18.767V140.905C355.47,120.172,332.922,97.623,312.196,97.623z"/></g>`,
             normal: `<g><path d="M305.536,68.089c-4.674,34.208,27.186,37.936,36.28,28.388c-9.481-1.893-12.576-22.067-7.835-35.344 c4.75-13.276,8.857-39.204-3.548-50.956c-15.878-15.064-40.708-13.531-51.458,5.432c3.16,3.795,10.201,7.798,13.91,12.017 C303,23.832,308.564,45.89,305.536,68.089z"/><path d="M240.234,111.902c26.391,4.031,51.07-14.09,55.12-40.49c4.031-26.401-14.1-51.08-40.5-55.12 c-26.4-4.04-51.079,14.09-55.11,40.491C195.693,83.182,213.834,107.861,240.234,111.902z"/><path d="M428.644,247.425l-32.022-44.73c-7.778-10.56-17.884-19.181-29.542-25.18l-65.406-34.34 c-15.112-6.16-26.022-11.223-41.825-11.96l-18.263-0.522c-11.317-0.189-22.815,3.369-30.716,11.488l-62.245,55.867l-53.918,14.79 c-10.21,2.801-16.437,13.105-14.175,23.448l0.19,0.804c2.224,10.172,11.922,16.901,22.237,15.424l43.433-6.189 c10.835-1.551,21.292-5.072,30.848-10.38l26.25-17.715l1.344,87.122c-0.266,7.012-0.417,11.8-3.36,16.919l-89.015,154.62 c-6.359,11.024-2.602,25.104,8.384,31.51l0.766,0.445c10.399,6.066,23.704,3.133,30.592-6.728l101.686-143.803l38.948,85.238 c3.009,3.965,6.652,7.39,10.788,10.164l77.726,52.044c9.784,6.567,22.994,4.484,30.299-4.779l0.87-1.108 c3.738-4.74,5.413-10.786,4.675-16.777c-0.748-5.99-3.861-11.441-8.649-15.112l-67.034-51.505l-38.816-109.691l3.464-98.336 l46.537,13.986l48.94,48.051c6.151,6.046,15.803,6.718,22.729,1.571l0.473-0.341C432.524,266.02,434.228,255.204,428.644,247.425z"/></g>`,
             fast: `<g><path d="M222.407,118.397c29.699,0,53.778-24.079,53.778-53.786c0-29.698-24.079-53.769-53.778-53.769 c-29.698,0-53.777,24.07-53.777,53.769C168.63,94.318,192.709,118.397,222.407,118.397z"/><path d="M471.964,466.181l-79.057-50.541l-63.692-100.086L308.249,197.24l68.218-6.34l58.721,37.968 c7.869,5.095,18.291,3.655,24.47-3.396l0.355-0.391c6.856-7.816,6.127-19.713-1.653-26.622l-52.542-46.708 c-5.664-5.032-12.902-7.941-20.478-8.225l-131.109-7.309c-4.028-0.223-7.78,0.079-7.78,0.079c-1.699,0.143-3.397,0.347-5.104,0.632 c-9.549,1.644-18.121,5.592-25.252,11.168l-96.396,58.206l-60.722-33.966c-9.425-5.273-21.34-2.143-26.942,7.087l-0.764,1.254 c-2.784,4.579-3.619,10.065-2.33,15.249c1.289,5.193,4.606,9.656,9.194,12.395l72.352,43.188c9.007,5.379,19.98,6.348,29.796,2.64 l61.051-23.082l20.326,81.964l-85.761-0.338c-11.374-0.036-22.177,5.015-29.433,13.782c-7.255,8.768-10.207,20.318-8.038,31.495 l22.719,116.998c2.516,12.955,14.796,21.633,27.858,19.677l0.97-0.151c12.919-1.939,22.086-13.613,20.886-26.622l-7.691-83.832 l119.328,3.771l55.893,56.312c7.789,7.852,16.663,14.529,26.364,19.819l83.032,45.348c11.63,6.01,25.937,1.707,32.33-9.728 l0.444-0.8C486.938,487.352,483.141,472.957,471.964,466.181z"/><path d="M277.297,32.192c16.948-3.504,35.336,6.704,62.038,13.222c33.3,8.118,61.46-20.184,50.452-44.024 c-6.42,2.757-13.765,17.428-58.704,2.757c-29.103-9.506-54.142-1.28-70.699,10.678C267.195,19.316,272.984,25.247,277.297,32.192z"/></g>`
@@ -232,17 +236,18 @@
         async function toggleTimer() {
             if (isRunning) {
                 clearInterval(timer); clearInterval(paceCheckInterval);
-                elements.startStopButton.innerHTML = icons.play;
+                elements.startStopButton.querySelector('svg').innerHTML = icons.play;
                 elements.startStopButton.style.backgroundColor = 'var(--button-color)';
                 isRunning = false; if (wakeLock) await wakeLock.release(); wakeLock = null;
             } else {
                 if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) { console.error(err); } }
-                elements.startStopButton.innerHTML = icons.pause;
+                elements.startStopButton.querySelector('svg').innerHTML = icons.pause;
                 elements.startStopButton.style.backgroundColor = 'var(--button-pause-color)';
                 isRunning = true;
                 
                 if (!currentSession) {
                     totalSeconds = getDuration();
+                    elements.stepsDisplay.textContent = `${languageManager.get('steps')} 0`;
                     currentSession = { date: new Date().toISOString(), duration: getDuration(), totalSteps: 0, stepsInInterval: 0, intervals: [] };
                     scheduleAudio(() => speak('speak_starting'), true);
                     scheduleAudio(() => new Promise(resolve => { updateIntervalState(true); resolve(); }));
@@ -261,7 +266,11 @@
                     const isFast = elements.intervalDisplay.textContent === languageManager.get('speak_fast');
                     stepsPerMinute = isFast ? Math.floor(Math.random()*20)+110 : Math.floor(Math.random()*10)+70;
                     const stepsThisTick = Math.round(stepsPerMinute / 12);
-                    if(currentSession) { currentSession.totalSteps += stepsThisTick; currentSession.stepsInInterval += stepsThisTick; }
+                    if(currentSession) { 
+                        currentSession.totalSteps += stepsThisTick; 
+                        currentSession.stepsInInterval += stepsThisTick;
+                        elements.stepsDisplay.textContent = `${languageManager.get('steps')} ${currentSession.totalSteps}`;
+                    }
                     if(isFast && stepsPerMinute < 100) scheduleAudio(() => speak('speak_pace_prompt'));
                 }, 5000);
             }
@@ -284,9 +293,10 @@
 
         function resetUI() {
             isRunning = false; totalSeconds = getDuration();
-            elements.startStopButton.innerHTML = icons.play;
+            elements.startStopButton.querySelector('svg').innerHTML = icons.play;
             elements.startStopButton.style.backgroundColor = 'var(--button-color)';
             elements.intervalDisplay.textContent = languageManager.get('get_ready');
+            elements.stepsDisplay.textContent = '';
             elements.intervalIcon.innerHTML = icons.idle;
             elements.intervalIcon.style.fill = 'var(--text-secondary)';
             drawDial(100, 'var(--ring-bg)');
@@ -374,7 +384,7 @@
         elements.calendarNavNext.addEventListener('click', () => { statsDate.setMonth(statsDate.getMonth() + 1); renderCalendar(statsDate); });
         document.querySelectorAll('.modal').forEach(modal => modal.querySelector('.close-button').addEventListener('click', () => { modal.style.display = 'none'; if (modal.id === 'encouragement-modal') resetUI(); }));
         elements.settingsButton.addEventListener('click', () => elements.settingsModal.style.display = 'flex');
-        elements.languageSelect.addEventListener('change', (e) => { languageManager.lang = e.target.value; localStorage.setItem('userLanguage', languageManager.lang); languageManager.applyStrings(); });
+        elements.languageSelect.addEventListener('change', (e) => { languageManager.lang = e.target.value; localStorage.setItem('userLanguage', languageManager.lang); languageManager.applyStrings(); resetUI(); });
         elements.coachingToggle.addEventListener('change', (e) => { coachingEnabled = e.target.checked; localStorage.setItem('coachingEnabled', coachingEnabled); updateLanguageSelectState(); });
         
         window.onload = () => {
