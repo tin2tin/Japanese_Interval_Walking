@@ -65,35 +65,49 @@
         #session-details { min-height: 120px; margin-top: 15px; border-top: 1px solid #444; padding-top: 10px; text-align: left;}
         .graph-container { width: 100%; margin-top: 10px; } .graph-container svg { width: 100%; height: auto; }
 
-        /* SCALING FOR TOUCH DEVICES - MORE AGGRESSIVE */
+        /* AGGRESSIVE SCALING FOR TOUCH DEVICES */
         @media (hover: none) and (pointer: coarse) {
+            /* Vertically distribute the main components */
+            .main-container {
+                justify-content: space-around;
+                padding: 5vh 0;
+                box-sizing: border-box;
+            }
+            .main-container > * {
+                flex-shrink: 0; /* Prevent items from shrinking */
+            }
+
             .top-bar-icon {
                 width: 12vw; height: 12vw;
-                max-width: 50px; max-height: 50px; /* Increased cap */
-                top: 3vh;
+                max-width: 60px; max-height: 60px;
+                top: 4vh;
             }
             #settings-button { right: 5vw; }
             #stats-button { left: 5vw; }
             #info-button { left: 19vw; }
 
-            #status-container { height: auto; margin-bottom: 2vh; }
+            #status-container {
+                height: auto;
+                margin-bottom: 0;
+            }
             #interval-icon {
                 width: 15vw; height: 15vw;
-                max-width: 70px; max-height: 70px;
+                max-width: 75px; max-height: 75px;
             }
             
-            .main-container { justify-content: center; }
-            #dial-container { width: 85vw; height: 85vw; } /* Made dial larger */
+            #dial-container {
+                width: 80vw; height: 80vw;
+            }
             
-            #interval-timer-display { font-size: 22vw; } /* Larger timer text */
+            #interval-timer-display { font-size: 22vw; }
             #interval-display { font-size: 6vw; }
             #total-time-display { font-size: 4vw; }
             #steps-display { font-size: 5vw; }
 
             #start-stop-button {
-                width: 22vw; height: 22vw; /* Significantly larger button */
-                max-width: 100px; max-height: 100px;
-                margin-top: 5vh;
+                width: 25vw; height: 25vw;
+                max-width: 120px; max-height: 120px;
+                margin-top: 0;
             }
             #start-stop-button svg {
                 width: 50%;
