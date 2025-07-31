@@ -231,19 +231,16 @@
             }
         };
         
-        // --- START: NEW STEP COUNTER IMPLEMENTATION ---
         const stepCounter = {
             sensor: null,
-            status: 'uninitialized', // uninitialized, permission_required, ready, active, unavailable, denied
+            status: 'uninitialized',
             isStepInProgress: false,
             lastMagnitude: 0,
-            magnitudeThreshold: 11, // m/s^2, a common value for walking
-            stepTimeThreshold: 250, // ms, to avoid double counting
+            magnitudeThreshold: 11,
+            stepTimeThreshold: 250,
             lastStepTime: 0,
             onStepCallback: null,
-
             async requestPermission() {
-                // For iOS/Safari
                 if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
                     try {
                         const permissionState = await DeviceMotionEvent.requestPermission();
@@ -256,123 +253,74 @@
                             return 'denied';
                         }
                     } catch (error) {
-                        console.error("DeviceMotionEvent permission error:", error);
-                        this.status = 'denied';
-                        return 'denied';
+                        this.status = 'denied'; return 'denied';
                     }
                 }
-                // For Chrome/Android
                 if ('Accelerometer' in window) {
                     try {
                         const { state } = await navigator.permissions.query({ name: 'accelerometer' });
-                        if (state === 'granted') {
-                            this.status = 'ready';
-                            return 'granted';
-                        } else if (state === 'prompt') {
-                            this.status = 'permission_required';
-                            return 'prompt';
-                        } else {
-                            this.status = 'denied';
-                            return 'denied';
-                        }
+                        if (state === 'granted') { this.status = 'ready'; return 'granted'; } 
+                        else if (state === 'prompt') { this.status = 'permission_required'; return 'prompt'; } 
+                        else { this.status = 'denied'; return 'denied'; }
                     } catch (error) {
-                         console.error("Sensor permission query failed:", error);
-                         this.status = 'unavailable';
-                         return 'unavailable';
+                         this.status = 'unavailable'; return 'unavailable';
                     }
                 }
                 this.status = 'unavailable';
                 return 'unavailable';
             },
-
             start(callback) {
-                if (this.status !== 'ready' && this.status !== 'permission_required') {
-                    console.warn(`Cannot start step counter, status is: ${this.status}`);
-                    return false;
-                }
+                if (this.status !== 'ready' && this.status !== 'permission_required') { return false; }
                 this.onStepCallback = callback;
                 try {
-                    // Chrome/Android implementation
                     if ('Accelerometer' in window) {
                         this.sensor = new Accelerometer({ frequency: 10 });
                         this.sensor.addEventListener('reading', this.handleAccelerometerReading);
-                        this.sensor.addEventListener('error', e => {
-                            if (e.error.name === 'NotAllowedError') {
-                                this.status = 'denied';
-                                alert(languageManager.get('sensor_denied'));
-                            }
-                        });
+                        this.sensor.addEventListener('error', e => { if (e.error.name === 'NotAllowedError') { this.status = 'denied'; alert(languageManager.get('sensor_denied')); } });
                         this.sensor.start();
                         this.status = 'active';
                         return true;
                     } 
-                    // iOS/Safari implementation (already has event listener from permission request)
                     else if (typeof DeviceMotionEvent !== 'undefined') {
                         this.status = 'active';
                         return true;
                     }
                 } catch(e) {
-                     if (e.name === 'SecurityError' || e.name === 'NotAllowedError') {
-                         this.status = 'denied';
-                         alert(languageManager.get('sensor_denied'));
-                    } else {
-                        this.status = 'unavailable';
-                        console.error("Failed to start sensor:", e);
-                    }
+                     if (e.name === 'SecurityError' || e.name === 'NotAllowedError') { this.status = 'denied'; alert(languageManager.get('sensor_denied')); } 
+                     else { this.status = 'unavailable'; console.error("Failed to start sensor:", e); }
                     return false;
                 }
             },
-
             stop() {
-                if (this.sensor) {
-                    this.sensor.stop();
-                    this.sensor = null;
-                }
+                if (this.sensor) { this.sensor.stop(); this.sensor = null; }
                 window.removeEventListener('devicemotion', this.handleDeviceMotionEvent);
                 this.status = 'ready';
                 this.onStepCallback = null;
             },
-
             processAcceleration(x, y, z) {
                 if (x === null || y === null || z === null) return;
-
                 const magnitude = Math.sqrt(x*x + y*y + z*z);
                 const smoothedMagnitude = 0.7 * magnitude + 0.3 * this.lastMagnitude;
                 this.lastMagnitude = smoothedMagnitude;
-                
                 const now = Date.now();
-                if (now - this.lastStepTime < this.stepTimeThreshold) {
-                    return;
-                }
-
-                if (!this.isStepInProgress && smoothedMagnitude > this.magnitudeThreshold) {
-                    this.isStepInProgress = true;
-                } else if (this.isStepInProgress && smoothedMagnitude < (this.magnitudeThreshold - 1)) { // Go below threshold to complete step
+                if (now - this.lastStepTime < this.stepTimeThreshold) { return; }
+                if (!this.isStepInProgress && smoothedMagnitude > this.magnitudeThreshold) { this.isStepInProgress = true; } 
+                else if (this.isStepInProgress && smoothedMagnitude < (this.magnitudeThreshold - 1)) {
                     this.isStepInProgress = false;
                     this.lastStepTime = now;
-                    if (this.onStepCallback) {
-                        this.onStepCallback();
-                    }
+                    if (this.onStepCallback) { this.onStepCallback(); }
                 }
             },
-            
-            // Arrow functions to preserve 'this' context
-            handleAccelerometerReading: () => {
-                stepCounter.processAcceleration(stepCounter.sensor.x, stepCounter.sensor.y, stepCounter.sensor.z);
-            },
-            handleDeviceMotionEvent: (event) => {
-                const { x, y, z } = event.accelerationIncludingGravity;
-                stepCounter.processAcceleration(x, y, z);
-            }
+            handleAccelerometerReading: () => { stepCounter.processAcceleration(stepCounter.sensor.x, stepCounter.sensor.y, stepCounter.sensor.z); },
+            handleDeviceMotionEvent: (event) => { const { x, y, z } = event.accelerationIncludingGravity; stepCounter.processAcceleration(x, y, z); }
         };
-        // --- END: NEW STEP COUNTER IMPLEMENTATION ---
-
 
         let timer, wakeLock = null, totalSeconds, paceCheckInterval;
         let isRunning = false, coachingEnabled = true;
         let currentSession;
         let statsDate = new Date();
         let useRealSteps = false;
+        let lastPacePromptTime = 0; // CORRECTED: Initialize timestamp for pace prompt cooldown
 
         const fullDuration = 1800, debugDuration = 60;
         
@@ -434,7 +382,10 @@
             
             if (elements.intervalDisplay.textContent !== newIntervalText || isInitialCall) {
                 if (!isInitialCall && currentSession) { currentSession.intervals.push({ type: elements.intervalDisplay.textContent, steps: currentSession.stepsInInterval }); }
-                if (currentSession) currentSession.stepsInInterval = 0;
+                if (currentSession) {
+                    currentSession.stepsInInterval = 0;
+                    lastPacePromptTime = 0; // Reset prompt timer for new interval
+                }
 
                 elements.intervalDisplay.textContent = newIntervalText;
                 elements.intervalIcon.innerHTML = isFast ? icons.fast : icons.normal;
@@ -449,15 +400,32 @@
             }
         }
         
+        // CORRECTED: Added a cooldown to the pace prompt
         function handleStep() {
-            if(currentSession) { 
-                currentSession.totalSteps++;
-                currentSession.stepsInInterval++;
-                elements.stepsDisplay.textContent = `${languageManager.get('steps')} ${currentSession.totalSteps}`;
-                
-                const isFast = elements.intervalDisplay.textContent === languageManager.get('speak_fast');
-                const stepsPerMinute = (currentSession.stepsInInterval / ((getDuration() - totalSeconds) % (getDuration() / 10))) * 60;
-                if(isFast && stepsPerMinute > 1 && stepsPerMinute < 100) scheduleAudio(() => speak('speak_pace_prompt'));
+            if(!currentSession) return;
+            
+            currentSession.totalSteps++;
+            currentSession.stepsInInterval++;
+            elements.stepsDisplay.textContent = `${languageManager.get('steps')} ${currentSession.totalSteps}`;
+            
+            const isFast = elements.intervalDisplay.textContent === languageManager.get('speak_fast');
+            
+            // Calculate time elapsed in the current interval
+            const intervalLength = getDuration() / (getDuration() === debugDuration ? 2 : 10);
+            const timeInInterval = ((getDuration() - totalSeconds) % intervalLength);
+
+            // Only check pace if in fast mode and after a 15-second grace period
+            if (!isFast || timeInInterval < 15) {
+                return;
+            }
+            
+            const stepsPerMinute = (currentSession.stepsInInterval / timeInInterval) * 60;
+            const now = Date.now();
+
+            // Check if pace is too slow AND if enough time has passed since the last prompt
+            if (stepsPerMinute < 100 && (now - lastPacePromptTime > 20000)) { 
+                scheduleAudio(() => speak('speak_pace_prompt'));
+                lastPacePromptTime = now; // Update the timestamp to enforce cooldown
             }
         }
 
@@ -466,7 +434,7 @@
                 if (!isRunning) { clearInterval(paceCheckInterval); return; }
                 const isFast = elements.intervalDisplay.textContent === languageManager.get('speak_fast');
                 const stepsPerMinute = isFast ? Math.floor(Math.random()*20)+110 : Math.floor(Math.random()*10)+70;
-                const stepsThisTick = Math.round(stepsPerMinute / 12); // Ticks every 5 seconds
+                const stepsThisTick = Math.round(stepsPerMinute / 12);
                 for (let i = 0; i < stepsThisTick; i++) { handleStep(); }
             }, 5000);
         }
@@ -474,7 +442,7 @@
         async function toggleTimer() {
             if (audioContext.state === 'suspended') audioContext.resume();
 
-            if (isRunning) { // --- PAUSE ---
+            if (isRunning) {
                 isRunning = false;
                 clearInterval(timer);
                 if (useRealSteps) stepCounter.stop();
@@ -483,14 +451,14 @@
                 elements.startStopButton.querySelector('svg').innerHTML = icons.play;
                 elements.startStopButton.style.backgroundColor = 'var(--button-color)';
                 if (wakeLock) { await wakeLock.release(); wakeLock = null; }
-            } else { // --- START / RESUME ---
+            } else {
                 if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) { console.error(`${err.name}, ${err.message}`); } }
                 
                 isRunning = true;
                 elements.startStopButton.querySelector('svg').innerHTML = icons.pause;
                 elements.startStopButton.style.backgroundColor = 'var(--button-pause-color)';
                 
-                if (!currentSession) { // --- NEW SESSION ---
+                if (!currentSession) {
                     totalSeconds = getDuration();
                     currentSession = { date: new Date().toISOString(), duration: getDuration(), totalSteps: 0, stepsInInterval: 0, intervals: [] };
                     
@@ -509,7 +477,7 @@
                     scheduleAudio(() => speak('speak_starting'), true);
                     scheduleAudio(() => speak('speak_fast'), true);
                     updateIntervalState(true);
-                } else { // --- RESUME SESSION ---
+                } else {
                     if (useRealSteps) stepCounter.start(handleStep);
                     else startFallbackPaceInterval();
                 }
@@ -529,8 +497,8 @@
                     const intervalLength = getDuration() / (getDuration() === debugDuration ? 2 : 10);
                     const timeElapsed = getDuration() - totalSeconds;
                     
-                    if(intervalLength === 180){ 
-                        const paceKey = elements.intervalDisplay.textContent === languageManager.get('speak_fast') ? 'speak_fast' : 'speak_normal';
+                    if(getDuration() === 1800){ 
+                        const intervalTimeRemaining = intervalLength - (timeElapsed % intervalLength);
                         if (intervalTimeRemaining === 120) scheduleAudio(() => speak('speak_2_min'));
                         if (intervalTimeRemaining === 60) scheduleAudio(() => speak('speak_1_min'));
                         if (intervalTimeRemaining === 30) scheduleAudio(() => speak('speak_30_sec'));
