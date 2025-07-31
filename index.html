@@ -65,31 +65,24 @@
         #session-details { min-height: 120px; margin-top: 15px; border-top: 1px solid #444; padding-top: 10px; text-align: left;}
         .graph-container { width: 100%; margin-top: 10px; } .graph-container svg { width: 100%; height: auto; }
 
-        /* FINAL AGGRESSIVE SCALING FOR TOUCH DEVICES */
+        /* SCALING FOR TOUCH DEVICES */
         @media (hover: none) and (pointer: coarse) {
-            /* Vertically distribute the main components for a better mobile layout */
-            .main-container {
-                justify-content: space-around;
-                padding: 4vh 0; /* Add some vertical padding */
-                box-sizing: border-box;
-            }
-            .main-container > * {
-                margin: 0; /* Remove default margins that interfere with layout */
-            }
-
             .top-bar-icon {
-                width: 13vw; /* Larger icons */
-                height: 13vw;
+                width: 13vw; height: 13vw;
                 top: 3vh;
             }
             #settings-button { right: 5vw; }
             #stats-button { left: 5vw; }
             #info-button { left: 20vw; }
 
-            #status-container { height: auto; }
+            .main-container { justify-content: center; }
+
+            #status-container {
+                height: auto;
+                margin-bottom: -2vh; /* Use negative margin to pull circle up */
+            }
             #interval-icon {
-                width: 15vw; /* Larger status icon */
-                height: 15vw;
+                width: 15vw; height: 15vw;
             }
             
             #dial-container { width: 80vw; height: 80vw; }
@@ -100,8 +93,8 @@
             #steps-display { font-size: 5vw; }
 
             #start-stop-button {
-                width: 25vw; /* Much larger button */
-                height: 25vw;
+                width: 25vw; height: 25vw;
+                margin-top: 5vh; /* Positive margin to push button down */
             }
             #start-stop-button svg {
                 width: 50%;
