@@ -103,8 +103,9 @@
 
             /* Modal Scaling */
             .modal-content {
-                width: 95%; /* Wider modal */
-                padding: 4vw; /* Responsive padding */
+                width: 95%; /* Make modal almost full width */
+                max-width: none; /* CRITICAL: Remove the desktop width limit */
+                padding: 4vw;
             }
             .modal-content h2 {
                 font-size: 6vw;
