@@ -65,38 +65,35 @@
         #session-details { min-height: 120px; margin-top: 15px; border-top: 1px solid #444; padding-top: 10px; text-align: left;}
         .graph-container { width: 100%; margin-top: 10px; } .graph-container svg { width: 100%; height: auto; }
 
-        /* SCALING FOR TOUCH DEVICES */
+        /* SCALING FOR TOUCH DEVICES - MORE AGGRESSIVE */
         @media (hover: none) and (pointer: coarse) {
             .top-bar-icon {
-                width: 10vw; height: 10vw;
-                max-width: 44px; max-height: 44px;
-                top: 2.5vh;
-            }
-            #settings-button { right: 4vw; }
-            #stats-button { left: 4vw; }
-            #info-button { left: 16vw; } /* Position relative to the others */
-
-            #status-container {
-                height: auto;
-                margin-bottom: 2vh;
-            }
-            #interval-icon {
                 width: 12vw; height: 12vw;
-                max-width: 60px; max-height: 60px;
+                max-width: 50px; max-height: 50px; /* Increased cap */
+                top: 3vh;
+            }
+            #settings-button { right: 5vw; }
+            #stats-button { left: 5vw; }
+            #info-button { left: 19vw; }
+
+            #status-container { height: auto; margin-bottom: 2vh; }
+            #interval-icon {
+                width: 15vw; height: 15vw;
+                max-width: 70px; max-height: 70px;
             }
             
             .main-container { justify-content: center; }
-            #dial-container { width: 80vw; height: 80vw; }
+            #dial-container { width: 85vw; height: 85vw; } /* Made dial larger */
             
-            #interval-timer-display { font-size: 20vw; }
-            #interval-display { font-size: 5vw; }
-            #total-time-display { font-size: 3.5vw; }
-            #steps-display { font-size: 4.5vw; }
+            #interval-timer-display { font-size: 22vw; } /* Larger timer text */
+            #interval-display { font-size: 6vw; }
+            #total-time-display { font-size: 4vw; }
+            #steps-display { font-size: 5vw; }
 
             #start-stop-button {
-                width: 20vw; height: 20vw;
-                max-width: 90px; max-height: 90px;
-                margin-top: 4vh;
+                width: 22vw; height: 22vw; /* Significantly larger button */
+                max-width: 100px; max-height: 100px;
+                margin-top: 5vh;
             }
             #start-stop-button svg {
                 width: 50%;
@@ -137,8 +134,7 @@
     <div id="info-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="info-title"></h2><div id="info-body" class="modal-body"></div></div></div>
 
     <script>
-        // The JavaScript logic remains the same as the previous correct version.
-        // All changes are in the CSS.
+        // The JavaScript logic is correct and remains unchanged.
         const elements = {
             timerDisplay: document.getElementById('interval-timer-display'), totalTimeDisplay: document.getElementById('total-time-display'),
             intervalDisplay: document.getElementById('interval-display'), stepsDisplay: document.getElementById('steps-display'),
