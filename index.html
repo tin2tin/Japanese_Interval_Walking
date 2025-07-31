@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
     <title>Interval Walking</title>
     <style>
         :root {
@@ -10,16 +10,18 @@
             --ring-bg: #333; --ring-fast: #007BFF; --ring-normal: #28a745;
             --button-color: #28a745; --button-pause-color: #dc3545; --button-text-color: #ffffff;
             --icon-color: #A0A0A0; --modal-bg: #2C2C2C; --modal-text: #E0E0E0;
+            --graph-line: var(--ring-fast);
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0; padding: 0; display: flex; flex-direction: column;
             justify-content: space-between; align-items: center; height: 100vh;
             background-color: var(--bg-color); color: var(--text-color); -webkit-tap-highlight-color: transparent;
+            overflow: hidden; /* Prevent scrolling on mobile */
         }
-        .top-bar-icon { position: absolute; top: 20px; cursor: pointer; z-index: 100; fill: var(--icon-color); }
+        .top-bar-icon { position: absolute; top: 20px; cursor: pointer; z-index: 100; fill: var(--icon-color); width: 32px; height: 32px;}
         #settings-button { right: 20px; } #stats-button { left: 20px; } #info-button { left: 60px; }
-        .main-container { text-align: center; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .main-container { text-align: center; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; }
         #status-container { display: flex; flex-direction: column; align-items: center; height: 60px; margin-bottom: 10px; justify-content: flex-end; }
         #interval-icon { width: 48px; height: 48px; }
         #dial-container { position: relative; width: 280px; height: 280px; }
@@ -28,37 +30,54 @@
         #dial-background { stroke: var(--ring-bg); }
         #dial-progress { stroke: var(--ring-fast); stroke-linecap: round; transition: stroke 1s, stroke-dashoffset 1s linear; }
         #dial-content { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        #interval-display { font-size: 1.5rem; font-weight: bold; color: var(--text-secondary); }
-        #interval-timer-display { font-size: 5rem; font-weight: 200; letter-spacing: 2px; margin-bottom: 5px; }
+        #interval-display { font-size: 1.5rem; font-weight: bold; color: var(--text-secondary); margin-bottom: -10px; }
+        #interval-timer-display { font-size: 5rem; font-weight: 200; letter-spacing: 2px; width: 100%; text-align: center; }
+        #total-time-display { font-size: 1rem; color: var(--text-secondary); margin-top: -15px; margin-bottom: 5px; }
         #steps-display { font-size: 1.2rem; color: var(--text-secondary); min-height: 1.5rem; }
-        #total-time-display { font-size: 1rem; color: var(--text-secondary); }
         #start-stop-button { width: 80px; height: 80px; border-radius: 50%; background-color: var(--button-color); color: var(--button-text-color); border: none; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.2); transition: background-color 0.3s; margin-top: 20px; display: flex; justify-content: center; align-items: center; }
         #start-stop-button svg { fill: var(--button-text-color); }
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
-        .modal-content { background-color: var(--modal-bg); color: var(--modal-text); width: 90%; max-width: 500px; text-align: center; border-radius: 10px; font-size: 1.2rem; position: relative; max-height: 85vh; display: flex; flex-direction: column; padding: 20px; }
+        .modal-content { background-color: var(--modal-bg); color: var(--modal-text); width: 90%; max-width: 500px; text-align: center; border-radius: 10px; position: relative; max-height: 85vh; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
         .modal-body { overflow-y: auto; text-align: left; padding-right: 10px; }
         .modal-body h3 { color: var(--ring-fast); } .modal-body ul { padding-left: 20px; }
+        #info-body p, #info-body li { font-size: 1rem; }
         .close-button { position: absolute; top: 10px; right: 15px; font-size: 2rem; font-weight: bold; cursor: pointer; color: #888; }
-        .settings-row, .stats-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #444; }
-        .stats-row { cursor: pointer; } .stats-row:hover { background-color: #383838; }
-        #stats-summary { padding-bottom: 15px; margin-bottom: 15px; border-bottom: 2px solid #555; }
-        .graph-container { width: 100%; margin-top: 10px; } .graph-container svg { width: 100%; height: auto; }
-        #language-label[disabled] { opacity: 0.5; }
+        .settings-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; padding: 15px 5px; border-bottom: 1px solid #444; }
+        .stats-row { padding: 10px 5px; border-bottom: 1px solid #444; text-align: left; }
+        #stats-summary { padding-bottom: 15px; margin-bottom: 15px; border-bottom: 2px solid #555; text-align: left;}
+        #stats-summary h3 { margin-top: 0; }
+        #language-select { background-color: #444; color: var(--modal-text); border: 1px solid #555; border-radius: 5px; padding: 5px; font-size: 1rem;}
+        #language-select:disabled { opacity: 0.5; }
+        .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #555; transition: .4s; border-radius: 28px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--button-color); }
+        input:checked + .slider:before { transform: translateX(22px); }
         #calendar-header { display: flex; justify-content: space-between; align-items: center; padding: 10px; }
-        #calendar-nav { cursor: pointer; font-size: 1.5rem; }
+        #calendar-nav-prev, #calendar-nav-next { cursor: pointer; font-size: 1.5rem; user-select: none; padding: 0 10px; }
         #calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-        .calendar-day { text-align: center; padding: 5px; border-radius: 4px; position: relative; }
+        .calendar-day { text-align: center; padding: 5px; border-radius: 4px; position: relative; aspect-ratio: 1 / 1; display: flex; justify-content: center; align-items: center;}
         .day-name { font-size: 0.8rem; color: var(--text-secondary); }
-        .workout-day { background-color: var(--ring-normal); color: var(--bg-color); cursor: pointer; }
-        .workout-day::after { content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; background-color: var(--bg-color); border-radius: 50%; }
-        #session-details { min-height: 120px; margin-top: 15px; border-top: 1px solid #444; padding-top: 10px;}
+        .workout-day { background-color: var(--ring-normal); color: var(--bg-color); cursor: pointer; font-weight: bold; }
+        #session-details { min-height: 120px; margin-top: 15px; border-top: 1px solid #444; padding-top: 10px; text-align: left;}
+        .graph-container { width: 100%; margin-top: 10px; } .graph-container svg { width: 100%; height: auto; }
+
+        /* Android Scaling */
+        body.android-scale .main-container { justify-content: center; }
+        body.android-scale #dial-container { width: 85vw; height: 85vw; }
+        body.android-scale #interval-timer-display { font-size: 20vw; }
+        body.android-scale #interval-display { font-size: 5vw; }
+        body.android-scale #total-time-display { font-size: 3.5vw; }
+        body.android-scale #steps-display { font-size: 4.5vw; }
+        body.android-scale #start-stop-button { width: 18vw; height: 18vw; max-width: 90px; max-height: 90px; }
     </style>
 </head>
 <body>
-    <svg id="stats-button" class="top-bar-icon" xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 0 24 24" width="32px"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg>
-    <svg id="info-button" class="top-bar-icon" xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 0 24 24" width="32px"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-    <svg id="settings-button" class="top-bar-icon" xmlns="http://www.w3.org/2000/svg" height="32px" viewBox="0 0 24 24" width="32px"><path d="M0 0h24v24H0z" fill="none"/><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
-    
+    <svg id="stats-button" class="top-bar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg>
+    <svg id="info-button" class="top-bar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+    <svg id="settings-button" class="top-bar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41H9.92 c-0.24,0-0.44,0.17-0.48,0.41L9.04,5.08C8.45,5.32,7.92,5.64,7.42,6.02L5.03,5.06C4.81,4.99,4.56,5.06,4.44,5.28L2.52,8.6 C2.41,8.8,2.46,9.07,2.64,9.21l2.03,1.58C4.62,11.06,4.6,11.37,4.6,11.69c0,0.32,0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.4,2.27 c0.04,0.24,0.24,0.41,0.48,0.41h4.16c0.24,0,0.44-0.17,0.48-0.41l0.4-2.27c0.59-0.24,1.12-0.56,1.62-0.94l2.39,0.96 c0.22,0.07,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+
     <div class="main-container">
         <div id="status-container">
             <svg id="interval-icon" viewBox="0 0 512 512"></svg>
@@ -71,18 +90,18 @@
             <div id="dial-content">
                 <div id="interval-display"></div>
                 <div id="interval-timer-display"></div>
-                <div id="steps-display"></div>
                 <div id="total-time-display"></div>
+                <div id="steps-display"></div>
             </div>
         </div>
         <button id="start-stop-button">
             <svg viewBox="0 0 24 24" width="32" height="32"></svg>
         </button>
     </div>
-    
+
     <div id="encouragement-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="modal-title"></h2><p id="encouragement-text"></p></div></div>
-    <div id="settings-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="settings-title"></h2><div class="settings-row"><label id="coaching-label"></label><label class="switch"><input type="checkbox" id="coaching-toggle" checked><span class="slider"></span></label></div><div class="settings-row"><label id="language-label" for="language-select"></label><select id="language-select"><option value="en">English</option><option value="da">Dansk</option></select></div><hr><div class="settings-row" id="debug-container"><label id="debug-label"></label><label class="switch"><input type="checkbox" id="debug-mode"><span class="slider"></span></label></div></div></div>
-    <div id="stats-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="stats-title"></h2><div id="calendar-header"><span id="calendar-nav-prev" class="calendar-nav"><</span><span id="calendar-month-year"></span><span id="calendar-nav-next" class="calendar-nav">></span></div><div id="calendar-grid"></div><div id="session-details"></div><div id="steps-graph"></div></div></div>
+    <div id="settings-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="settings-title"></h2><div class="modal-body"><div class="settings-row"><label id="coaching-label"></label><label class="switch"><input type="checkbox" id="coaching-toggle" checked><span class="slider"></span></label></div><div class="settings-row"><label id="language-label" for="language-select"></label><select id="language-select"><option value="en">English</option><option value="da">Dansk</option></select></div><hr><div class="settings-row" id="debug-container"><label id="debug-label"></label><label class="switch"><input type="checkbox" id="debug-mode"><span class="slider"></span></label></div></div></div></div>
+    <div id="stats-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="stats-title"></h2><div id="stats-summary"></div><div id="calendar-header"><span id="calendar-nav-prev" class="calendar-nav"><</span><span id="calendar-month-year"></span><span id="calendar-nav-next" class="calendar-nav">></span></div><div id="calendar-grid"></div><div id="session-details"></div><div id="steps-graph"></div></div></div>
     <div id="info-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="info-title"></h2><div id="info-body" class="modal-body"></div></div></div>
 
     <script>
@@ -98,6 +117,7 @@
             languageSelect: document.getElementById('language-select'), coachingLabel: document.getElementById('coaching-label'),
             coachingToggle: document.getElementById('coaching-toggle'), statsButton: document.getElementById('stats-button'),
             statsModal: document.getElementById('stats-modal'), statsTitle: document.getElementById('stats-title'),
+            statsSummary: document.getElementById('stats-summary'),
             encouragementModal: document.getElementById('encouragement-modal'),
             dialProgress: document.getElementById('dial-progress'), intervalIcon: document.getElementById('interval-icon'),
             calendarHeader: document.getElementById('calendar-header'), calendarGrid: document.getElementById('calendar-grid'),
@@ -110,28 +130,32 @@
         
         const translations = {
             en: {
-                get_ready: "Get Ready", remaining: "remaining", info_title: "About Interval Walking", steps: "Steps:",
+                get_ready: "Get Ready", info_title: "About Interval Walking", steps: "Steps:", total_remaining: "Total remaining",
                 debug_mode: "Debug Mode (60s)", modal_complete: "Workout Complete!",
-                settings: "Settings", language: "Language", voice_coaching: "Voice Coaching", stats: "Statistics", 
-                no_history: "No completed sessions yet.", total_steps: "Total Steps", monthly_steps: "Monthly Steps Progression",
+                settings: "Settings", language: "Language", voice_coaching: "Voice Coaching", stats: "Statistics",
+                no_history: "No completed sessions yet.",
+                total_steps: "Total Steps", fast_steps: "Fast Steps", normal_steps: "Normal Steps", streak: "Day Streak",
                 speak_starting: "Starting workout.", speak_fast: "Fast Pace", speak_normal: "Normal Pace",
                 speak_fast_instruction: "Begin fast pace. Walk so you are almost out of breath.",
                 speak_normal_instruction: "Begin normal pace. Let your breathing return to normal.",
                 speak_halfway: "Halfway there. Keep up the great work.", speak_pace_prompt: "A little faster now, let's keep the pace.",
                 speak_complete: "Workout complete. Well done!",
+                speak_2_min: "2 minutes", speak_1_min: "1 minute", speak_30_sec: "30 seconds",
                 encouragement: ["Every step is a victory.", "You are nurturing your body and soul.", "Well done!"],
                 info_text: `<h3>Discover Japanese Interval Walking</h3><p>Welcome to a smarter way to walk! This is a powerful, science-backed method perfected by researchers in Japan. It alternates between bursts of speed and periods of active recovery to transform your health more effectively than a standard walk.</p><h3>Your 30-Minute Workout Plan</h3><p>The structure is simple but incredibly effective. You will repeat a 6-minute cycle five times.</p><p><strong>1. The High-Intensity Phase (3 Minutes)</strong><br>Your goal is to push your pace to about 70-80% of your personal maximum. You should be breathing noticeably and find it challenging to hold a long conversation.</p><p><strong>2. The Recovery Phase (3 Minutes)</strong><br>Ease back to a comfortable, gentle stroll, around 40-50% of your effort. This is your chance to catch your breath while keeping your body moving.</p><h3>Unlock Your Health Benefits</h3><p>This method is designed to deliver comprehensive results:</p><ul><li>❤️ Boost Your Heart Health</li><li>💪 Build Stronger Muscles</li><li>⚡ Supercharge Your Metabolism</li><li>🧠 Enhance Your Mental Clarity</li></ul><h3>Backed by Science</h3><p>This method was pioneered by Dr. Hiroshi Nose and his team at Shinshu University in Japan. A landmark study showed that after just 5 months, participants saw a 9% average increase in aerobic fitness and a 13% boost in leg strength.</p><h3>The Philosophy of Progress</h3><p>This workout embodies two beautiful Japanese concepts: <em>Kaizen (改善)</em>, the principle of continuous improvement, and <em>Wabi-Sabi (侘寂)</em>, finding beauty in the journey. Progress, not perfection, is the goal.</p><p>Ready to start? Let's take the first step together!</p>`
             },
             da: {
-                get_ready: "Gør klar", remaining: "tilbage", info_title: "Om Intervalgang", steps: "Skridt:",
+                get_ready: "Gør klar", info_title: "Om Intervalgang", steps: "Skridt:", total_remaining: "Total tilbage",
                 debug_mode: "Testtilstand (60s)", modal_complete: "Træning færdig!",
                 settings: "Indstillinger", language: "Sprog", voice_coaching: "Stemmecoaching", stats: "Statistik",
-                no_history: "Ingen gennemførte træninger endnu.", total_steps: "Samlede Skridt", monthly_steps: "Månedlig Fremgang i Skridt",
+                no_history: "Ingen gennemførte træninger endnu.",
+                total_steps: "Totale Skridt", fast_steps: "Hurtige Skridt", normal_steps: "Normale Skridt", streak: "Dages Stime",
                 speak_starting: "Starter træning.", speak_fast: "Hurtigt Tempo", speak_normal: "Normalt Tempo",
                 speak_fast_instruction: "Begynd hurtigt tempo. Gå så du er næsten stakåndet.",
                 speak_normal_instruction: "Begynd normalt tempo. Lad din vejrtrækning blive normal.",
                 speak_halfway: "Halvvejs. Fortsæt det gode arbejde.", speak_pace_prompt: "Lidt hurtigere nu, hold tempoet.",
                 speak_complete: "Træning færdig. Godt gået!",
+                speak_2_min: "To minutter", speak_1_min: "Et minut", speak_30_sec: "Tredive sekunder",
                 encouragement: ["Hvert skridt er en sejr.", "Du nærer din krop og sjæl.", "Godt klaret!"],
                 info_text: `<h3>Opdag Japansk Intervalgang</h3><p>Velkommen til en smartere måde at gå på! Dette er en kraftfuld, videnskabeligt underbygget metode, perfektioneret af forskere i Japan. Den veksler mellem hurtige ryk og perioder med aktiv restitution for at forbedre dit helbred mere effektivt end en almindelig gåtur.</p><h3>Din 30-Minutters Træningsplan</h3><p>Strukturen er simpel, men utroligt effektiv. Du vil gentage en 6-minutters cyklus fem gange.</p><p><strong>1. Høj-Intensitets Fasen (3 Minutter)</strong><br>Dit mål er at presse dit tempo op til omkring 70-80% af dit personlige maksimum. Din vejrtrækning bør være mærkbart hurtigere, og det skal være svært at føre en lang samtale.</p><p><strong>2. Restitutionsfasen (3 Minutter)</strong><br>Sænk tempoet til en behagelig, rolig gåtur, omkring 40-50% af din indsats. Dette er din chance for at få vejret igen, mens du holder kroppen i gang.</p><h3>Opnå Dine Sundhedsfordele</h3><p>Denne metode er designet til at levere omfattende resultater:</p><ul><li>❤️ Styrk Dit Hjerte</li><li>💪 Opbyg Stærkere Muskler</li><li>⚡ Giv Dit Stofskifte et Boost</li><li>🧠 Forbedr Din Mentale Klarhed</li></ul><h3>Bakket op af Videnskab</h3><p>Metoden blev udviklet af Dr. Hiroshi Nose og hans team ved Shinshu Universitet i Japan. Et banebrydende studie viste, at deltagere efter blot 5 måneder opnåede en gennemsnitlig forbedring på 9% i kondition og 13% i benstyrke.</p><h3>Filosofien om Fremskridt</h3><p>Denne træning omfavner to smukke japanske koncepter: <em>Kaizen (改善)</em>, princippet om kontinuerlig forbedring, og <em>Wabi-Sabi (侘寂)</em>, at finde skønhed i rejsen. Fremskridt, ikke perfektion, er målet.</p><p>Klar til at starte? Lad os tage det første skridt sammen!</p>`
             }
@@ -145,6 +169,7 @@
             },
             get: function(key) { return translations[this.lang][key] || translations.en[key]; },
             applyStrings: function() {
+                document.documentElement.lang = this.lang;
                 elements.debugLabel.textContent = this.get('debug_mode');
                 elements.modalTitle.textContent = this.get('modal_complete');
                 elements.settingsTitle.textContent = this.get('settings');
@@ -180,10 +205,10 @@
         };
         
         const audioQueue = []; let isAudioChainRunning = false;
-        async function processAudioQueue() { if (audioQueue.length === 0) { isAudioChainRunning = false; return; } isAudioChainRunning = true; const next = audioQueue.shift(); await next(); processAudioQueue(); }
+        async function processAudioQueue() { if (audioQueue.length === 0 || !coachingEnabled) { isAudioChainRunning = false; return; } isAudioChainRunning = true; const next = audioQueue.shift(); await next(); processAudioQueue(); }
         function scheduleAudio(func, important = false) { if (important) { audioQueue.length = 0; speechSynthesis.cancel(); } audioQueue.push(func); if (!isAudioChainRunning) processAudioQueue(); }
-        function playTunedSound(type) { return new Promise(r => { const s = sounds[type]; if (!s) { r(); return; } const now = audioContext.currentTime; const dur = 0.15; s.notes.forEach((f, i) => { const st = now + i * (dur * 0.9); const o = audioContext.createOscillator(), g = audioContext.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(f, st); g.gain.setValueAtTime(0, st); g.gain.linearRampToValueAtTime(0.5, st + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, st + dur); o.connect(g); g.connect(audioContext.destination); o.start(st); o.stop(st + dur); }); setTimeout(r, s.duration); }); }
-        function speak(key) { return new Promise(r => { if (!coachingEnabled) { r(); return; } const u = new SpeechSynthesisUtterance(languageManager.get(key)); u.lang = languageManager.lang; u.rate = 0.85; u.pitch = 0.95; u.voice = voices.find(v => v.lang.startsWith(languageManager.lang) && !v.localService) || voices.find(v => v.lang.startsWith(languageManager.lang) && /Microsoft|Google/i.test(v.name)) || voices.find(v => v.lang.startsWith(languageManager.lang) && v.default); u.onend = r; u.onerror = r; speechSynthesis.speak(u); }); }
+        function playTunedSound(type) { return new Promise(r => { if (!coachingEnabled) { r(); return; } const s = sounds[type]; if (!s) { r(); return; } const now = audioContext.currentTime; const dur = 0.15; s.notes.forEach((f, i) => { const st = now + i * (dur * 0.9); const o = audioContext.createOscillator(), g = audioContext.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(f, st); g.gain.setValueAtTime(0, st); g.gain.linearRampToValueAtTime(0.5, st + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, st + dur); o.connect(g); g.connect(audioContext.destination); o.start(st); o.stop(st + dur); }); setTimeout(r, s.duration); }); }
+        function speak(key) { return new Promise(r => { if (!coachingEnabled) { r(); return; } const u = new SpeechSynthesisUtterance(languageManager.get(key)); u.lang = languageManager.lang; u.rate = 0.9; u.pitch = 1.0; u.voice = voices.find(v => v.lang.startsWith(languageManager.lang) && !v.localService) || voices.find(v => v.lang.startsWith(languageManager.lang) && /Microsoft|Google/i.test(v.name)) || voices.find(v => v.lang.startsWith(languageManager.lang) && v.default); u.onend = r; u.onerror = r; setTimeout(() => speechSynthesis.speak(u), 100); }); }
         
         const dialRadius = 125;
         const circumference = 2 * Math.PI * dialRadius;
@@ -195,11 +220,10 @@
         
         function updateUIDisplay() {
             const totalMinutes = Math.floor(totalSeconds / 60); const totalSecs = totalSeconds % 60;
-            elements.totalTimeDisplay.textContent = `${totalMinutes.toString().padStart(2, '0')}:${totalSecs.toString().padStart(2, '0')} ${languageManager.get('remaining')}`;
+            elements.totalTimeDisplay.textContent = `${languageManager.get('total_remaining')}: ${totalMinutes.toString().padStart(2, '0')}:${totalSecs.toString().padStart(2, '0')}`;
             
             const intervalLength = getDuration() / (getDuration() === debugDuration ? 2 : 10);
-            let intervalTimeRemaining = intervalLength - ((getDuration() - totalSeconds - 1) % intervalLength);
-            if (intervalTimeRemaining === 0) intervalTimeRemaining = intervalLength;
+            let intervalTimeRemaining = intervalLength - ((getDuration() - totalSeconds) % intervalLength);
             
             const intervalMinutes = Math.floor(intervalTimeRemaining / 60); const intervalSecs = intervalTimeRemaining % 60;
             elements.timerDisplay.textContent = `${intervalMinutes.toString().padStart(2, '0')}:${intervalSecs.toString().padStart(2, '0')}`;
@@ -225,7 +249,7 @@
                 elements.intervalIcon.style.fill = isFast ? 'var(--ring-fast)' : 'var(--ring-normal)';
                 drawDial(100, isFast ? 'var(--ring-fast)' : 'var(--ring-normal)');
 
-                if (timeElapsed >= 0) {
+                if (!isInitialCall) {
                     if (window.navigator.vibrate) window.navigator.vibrate(isFast ? 500 : [200, 100, 200]);
                     scheduleAudio(() => playTunedSound(isFast ? 'up' : 'down'), true);
                     scheduleAudio(() => speak(isFast ? 'speak_fast_instruction' : 'speak_normal_instruction'), true);
@@ -235,37 +259,56 @@
 
         async function toggleTimer() {
             if (isRunning) {
-                clearInterval(timer); clearInterval(paceCheckInterval);
+                isRunning = false;
+                clearInterval(timer); 
+                clearInterval(paceCheckInterval);
                 elements.startStopButton.querySelector('svg').innerHTML = icons.play;
                 elements.startStopButton.style.backgroundColor = 'var(--button-color)';
-                isRunning = false; if (wakeLock) await wakeLock.release(); wakeLock = null;
+                if (wakeLock) { await wakeLock.release(); wakeLock = null; }
             } else {
-                if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) { console.error(err); } }
+                if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) { console.error(`${err.name}, ${err.message}`); } }
+                
+                isRunning = true;
                 elements.startStopButton.querySelector('svg').innerHTML = icons.pause;
                 elements.startStopButton.style.backgroundColor = 'var(--button-pause-color)';
-                isRunning = true;
                 
                 if (!currentSession) {
                     totalSeconds = getDuration();
-                    elements.stepsDisplay.textContent = `${languageManager.get('steps')} 0`;
                     currentSession = { date: new Date().toISOString(), duration: getDuration(), totalSteps: 0, stepsInInterval: 0, intervals: [] };
                     scheduleAudio(() => speak('speak_starting'), true);
-                    scheduleAudio(() => new Promise(resolve => { updateIntervalState(true); resolve(); }));
+                    updateIntervalState(true);
                 }
                 
                 timer = setInterval(() => {
-                    totalSeconds--; 
-                    if (totalSeconds < 0) { clearInterval(timer); clearInterval(paceCheckInterval); workoutComplete(); return; }
+                    if (!isRunning) { clearInterval(timer); return; }
+                    totalSeconds--;
+                    
+                    if (totalSeconds < 0) {
+                        workoutComplete();
+                        return;
+                    }
+
                     updateUIDisplay(); 
-                    if ( (getDuration() - totalSeconds) % (getDuration()/(getDuration() === debugDuration ? 2 : 10)) === 0) updateIntervalState();
+                    
+                    const intervalLength = getDuration() / (getDuration() === debugDuration ? 2 : 10);
+                    const intervalTimeRemaining = Math.round(intervalLength - ((getDuration() - totalSeconds) % intervalLength));
+                    
+                    if(intervalLength === 180){ // Only for 3-minute intervals
+                        if (intervalTimeRemaining === 120) scheduleAudio(() => speak('speak_2_min'));
+                        if (intervalTimeRemaining === 60) scheduleAudio(() => speak('speak_1_min'));
+                        if (intervalTimeRemaining === 30) scheduleAudio(() => speak('speak_30_sec'));
+                    }
+
+                    if ( (getDuration() - totalSeconds) % intervalLength === 0) updateIntervalState();
                     if (totalSeconds === Math.floor(getDuration() / 2)) scheduleAudio(() => speak('speak_halfway'));
+
                 }, 1000);
 
                 paceCheckInterval = setInterval(() => {
-                    if (!isRunning) return;
+                    if (!isRunning) { clearInterval(paceCheckInterval); return; }
                     const isFast = elements.intervalDisplay.textContent === languageManager.get('speak_fast');
                     stepsPerMinute = isFast ? Math.floor(Math.random()*20)+110 : Math.floor(Math.random()*10)+70;
-                    const stepsThisTick = Math.round(stepsPerMinute / 12);
+                    const stepsThisTick = Math.round(stepsPerMinute / 12); // Fired every 5 seconds (60/5=12)
                     if(currentSession) { 
                         currentSession.totalSteps += stepsThisTick; 
                         currentSession.stepsInInterval += stepsThisTick;
@@ -277,26 +320,40 @@
         }
 
         async function workoutComplete() {
-            if (window.navigator.vibrate) window.navigator.vibrate([500, 100, 500]);
-            if (currentSession) { currentSession.intervals.push({ type: elements.intervalDisplay.textContent, steps: currentSession.stepsInInterval }); }
-            saveSessionHistory(currentSession);
+            if (!isRunning) return; // Prevent double execution
             
-            elements.encouragementText.textContent = languageManager.get('encouragement')[Math.floor(Math.random() * languageManager.get('encouragement').length)];
+            isRunning = false;
+            clearInterval(timer);
+            clearInterval(paceCheckInterval);
+
+            if (window.navigator.vibrate) window.navigator.vibrate([500, 100, 500]);
+            
+            const finishedSession = { ...currentSession }; 
+            if (finishedSession.intervals) { 
+                finishedSession.intervals.push({ type: elements.intervalDisplay.textContent, steps: finishedSession.stepsInInterval });
+                saveSessionHistory(finishedSession);
+            }
+            
+            const totalStepsInSession = finishedSession.totalSteps || 0;
+            elements.encouragementText.innerHTML = `${languageManager.get('encouragement')[Math.floor(Math.random() * languageManager.get('encouragement').length)]}<br><br><strong>${languageManager.get('total_steps')}: ${totalStepsInSession.toLocaleString(languageManager.lang)}</strong>`;
             elements.encouragementModal.style.display = 'flex';
             
             scheduleAudio(() => playTunedSound('triumph'), true);
             scheduleAudio(() => speak('speak_complete'), true);
 
-            if (wakeLock) await wakeLock.release(); wakeLock = null;
+            if (wakeLock) { await wakeLock.release(); wakeLock = null; }
+            
             currentSession = null;
+            resetUI(); 
         }
 
         function resetUI() {
-            isRunning = false; totalSeconds = getDuration();
+            isRunning = false; 
+            totalSeconds = getDuration();
             elements.startStopButton.querySelector('svg').innerHTML = icons.play;
             elements.startStopButton.style.backgroundColor = 'var(--button-color)';
             elements.intervalDisplay.textContent = languageManager.get('get_ready');
-            elements.stepsDisplay.textContent = '';
+            elements.stepsDisplay.textContent = `${languageManager.get('steps')} 0`;
             elements.intervalIcon.innerHTML = icons.idle;
             elements.intervalIcon.style.fill = 'var(--text-secondary)';
             drawDial(100, 'var(--ring-bg)');
@@ -312,24 +369,67 @@
         }
 
         function saveSessionHistory(s) { if (!s) return; const h = JSON.parse(localStorage.getItem('sessionHistory') || '[]'); h.push(s); localStorage.setItem('sessionHistory', JSON.stringify(h)); }
-        function createSVGGraph(p, w, h, c) { if (p.length < 2) return ''; const max = Math.max(...p, 1); const d = p.map((v, i) => `${i===0?'M':'L'} ${(i/(p.length-1))*w} ${h-(v/max)*h}`).join(' '); return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><path d="${d}" stroke="${c}" stroke-width="2" fill="none" vector-effect="non-scaling-stroke"/></svg>`; }
-        function createBarChart(int, w, h) { if (!int || int.length === 0) return ''; const max = Math.max(...int.map(i => i.steps), 1); const bw = w / int.length; const bars = int.map((v, i) => `<rect x="${i*bw}" y="${h-(v.steps/max)*h}" width="${bw*0.9}" height="${(v.steps/max)*h}" fill="${v.type.toLowerCase().includes('fast') ? 'var(--ring-fast)' : 'var(--ring-normal)'}" />`).join(''); return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${bars}</svg>`; }
         
-        let currentMonth = new Date();
+        function calculateAndShowSummaryStats() {
+            const history = JSON.parse(localStorage.getItem('sessionHistory') || '[]');
+            if (history.length === 0) {
+                elements.statsSummary.innerHTML = `<p>${languageManager.get('no_history')}</p>`;
+                return;
+            }
+
+            let totalSteps = 0, totalFastSteps = 0, totalNormalSteps = 0;
+            const workoutDates = [];
+
+            history.forEach(session => {
+                totalSteps += session.totalSteps || 0;
+                if(session.intervals) {
+                    session.intervals.forEach(interval => {
+                        const type = interval.type.toLowerCase();
+                        const steps = interval.steps || 0;
+                        if (type.includes('fast') || type.includes('hurtig')) {
+                            totalFastSteps += steps;
+                        } else {
+                            totalNormalSteps += steps;
+                        }
+                    });
+                }
+                workoutDates.push(new Date(session.date));
+            });
+
+            const uniqueDays = [...new Set(workoutDates.map(d => d.setHours(0,0,0,0)))].sort((a,b) => a - b);
+            let currentStreak = 0, maxStreak = 0;
+            if (uniqueDays.length > 0) {
+                currentStreak = 1;
+                maxStreak = 1;
+                for (let i = 1; i < uniqueDays.length; i++) {
+                    const day = 86400000; // milliseconds in a day
+                    if (uniqueDays[i] - uniqueDays[i-1] === day) {
+                        currentStreak++;
+                    } else {
+                        currentStreak = 1;
+                    }
+                    maxStreak = Math.max(maxStreak, currentStreak);
+                }
+            }
+
+            elements.statsSummary.innerHTML = `
+                <div class="stats-row"><strong>${languageManager.get('total_steps')}:</strong> ${totalSteps.toLocaleString(languageManager.lang)}</div>
+                <div class="stats-row"><strong>${languageManager.get('fast_steps')}:</strong> ${totalFastSteps.toLocaleString(languageManager.lang)}</div>
+                <div class="stats-row"><strong>${languageManager.get('normal_steps')}:</strong> ${totalNormalSteps.toLocaleString(languageManager.lang)}</div>
+                <div class="stats-row"><strong>${languageManager.get('streak')}:</strong> ${maxStreak}</div>
+            `;
+        }
 
         function renderCalendar(date) {
             const history = JSON.parse(localStorage.getItem('sessionHistory') || '[]');
             const workoutDates = new Set(history.map(s => new Date(s.date).toDateString()));
 
-            const year = date.getFullYear();
-            const month = date.getMonth();
+            const year = date.getFullYear(); const month = date.getMonth();
             elements.calendarMonthYear.textContent = new Date(year, month).toLocaleDateString(languageManager.lang, { month: 'long', year: 'numeric' });
             elements.calendarGrid.innerHTML = '';
             
-            const firstDayOfMonth = (new Date(year, month, 1).getDay() + 6) % 7;
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            
-            const dayNames = new Array(7).fill(0).map((_, i) => new Date(2023, 0, i+2).toLocaleDateString(languageManager.lang, { weekday: 'short' }));
+            const firstDayOfWeek = 1; // Monday
+            const dayNames = new Array(7).fill(0).map((_, i) => new Date(2024, 0, (i + firstDayOfWeek)).toLocaleDateString(languageManager.lang, { weekday: 'short' }));
             dayNames.forEach(name => {
                 const dayNameEl = document.createElement('div');
                 dayNameEl.className = 'day-name';
@@ -337,9 +437,10 @@
                 elements.calendarGrid.appendChild(dayNameEl);
             });
 
-            for (let i = 0; i < firstDayOfMonth; i++) {
-                elements.calendarGrid.appendChild(document.createElement('div'));
-            }
+            const firstDayOfMonth = (new Date(year, month, 1).getDay() - firstDayOfWeek + 7) % 7;
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            for (let i = 0; i < firstDayOfMonth; i++) { elements.calendarGrid.appendChild(document.createElement('div')); }
 
             for (let day = 1; day <= daysInMonth; day++) {
                 const dayEl = document.createElement('div');
@@ -352,14 +453,13 @@
                 }
                 elements.calendarGrid.appendChild(dayEl);
             }
-            
-            const monthlySessions = history.filter(s => new Date(s.date).getMonth() === month && new Date(s.date).getFullYear() === year);
-            const monthlySteps = monthlySessions.map(s => s.totalSteps || 0);
-            elements.stepsGraph.innerHTML = `<h3>${languageManager.get('monthly_steps')}</h3><div class="graph-container">${createSVGGraph(monthlySteps, 100, 30, 'var(--graph-line)')}</div>`;
         }
-
+        
+        function createBarChart(int, w, h) { if (!int || int.length === 0) return ''; const max = Math.max(...int.map(i => i.steps), 1); const bw = w / int.length; const bars = int.map((v, i) => `<rect x="${i*bw}" y="${h-(v.steps/max)*h}" width="${bw*0.9}" height="${(v.steps/max)*h}" fill="${v.type.toLowerCase().includes('fast') || v.type.toLowerCase().includes('hurtig') ? 'var(--ring-fast)' : 'var(--ring-normal)'}" />`).join(''); return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${bars}</svg>`; }
+        
         function showStats() {
             statsDate = new Date();
+            calculateAndShowSummaryStats();
             renderCalendar(statsDate);
             elements.sessionDetails.innerHTML = '';
             elements.statsModal.style.display = 'flex';
@@ -369,8 +469,10 @@
             const history = JSON.parse(localStorage.getItem('sessionHistory') || '[]');
             const sessionForDay = history.filter(s => new Date(s.date).toDateString() === date.toDateString()).pop();
             if (!sessionForDay) return;
-            elements.sessionDetails.innerHTML = `<h4>${date.toLocaleDateString(languageManager.lang, {weekday: 'long', day: 'numeric', month: 'long'})}</h4>`;
-            elements.sessionDetails.innerHTML += `<div class="graph-container">${createBarChart(sessionForDay.intervals, 200, 80)}</div>`;
+            let detailsHTML = `<h4>${date.toLocaleDateString(languageManager.lang, {weekday: 'long', day: 'numeric', month: 'long'})}</h4>`;
+            detailsHTML += `<p>${languageManager.get('total_steps')}: ${sessionForDay.totalSteps.toLocaleString(languageManager.lang)}</p>`;
+            detailsHTML += `<div class="graph-container">${createBarChart(sessionForDay.intervals, 200, 80)}</div>`;
+            elements.sessionDetails.innerHTML = detailsHTML;
         }
         
         function populateVoices() { voices = speechSynthesis.getVoices(); }
@@ -382,12 +484,21 @@
         elements.infoButton.addEventListener('click', () => elements.infoModal.style.display = 'flex');
         elements.calendarNavPrev.addEventListener('click', () => { statsDate.setMonth(statsDate.getMonth() - 1); renderCalendar(statsDate); });
         elements.calendarNavNext.addEventListener('click', () => { statsDate.setMonth(statsDate.getMonth() + 1); renderCalendar(statsDate); });
-        document.querySelectorAll('.modal').forEach(modal => modal.querySelector('.close-button').addEventListener('click', () => { modal.style.display = 'none'; if (modal.id === 'encouragement-modal') resetUI(); }));
+        
+        document.querySelectorAll('.modal .close-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.target.closest('.modal').style.display = 'none';
+            });
+        });
+
         elements.settingsButton.addEventListener('click', () => elements.settingsModal.style.display = 'flex');
-        elements.languageSelect.addEventListener('change', (e) => { languageManager.lang = e.target.value; localStorage.setItem('userLanguage', languageManager.lang); languageManager.applyStrings(); resetUI(); });
-        elements.coachingToggle.addEventListener('change', (e) => { coachingEnabled = e.target.checked; localStorage.setItem('coachingEnabled', coachingEnabled); updateLanguageSelectState(); });
+        elements.languageSelect.addEventListener('change', (e) => { languageManager.lang = e.target.value; localStorage.setItem('userLanguage', languageManager.lang); languageManager.applyStrings(); if (!isRunning) resetUI(); });
+        elements.coachingToggle.addEventListener('change', (e) => { coachingEnabled = e.target.checked; localStorage.setItem('coachingEnabled', coachingEnabled); updateLanguageSelectState(); if(!coachingEnabled) speechSynthesis.cancel(); });
         
         window.onload = () => {
+            if (/android/i.test(navigator.userAgent)) {
+                document.body.classList.add('android-scale');
+            }
             populateVoices();
             if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = populateVoices;
             loadSettings();
