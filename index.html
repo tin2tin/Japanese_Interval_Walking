@@ -65,8 +65,47 @@
         #session-details { min-height: 120px; margin-top: 15px; border-top: 1px solid #444; padding-top: 10px; text-align: left;}
         .graph-container { width: 100%; margin-top: 10px; } .graph-container svg { width: 100%; height: auto; }
 
-        /* SCALING FOR TOUCH DEVICES */
+        /* Orientation Lock Overlay */
+        #orientation-lock-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            z-index: 2000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        #orientation-lock-overlay svg {
+            width: 25vw;
+            height: 25vw;
+            max-width: 100px;
+            max-height: 100px;
+            fill: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+        #orientation-lock-overlay h2 {
+            font-size: 6vw;
+            color: var(--text-color);
+        }
+
+        /* SCALING & ORIENTATION FOR TOUCH DEVICES */
         @media (hover: none) and (pointer: coarse) {
+            /* Landscape mode on touch device: Show overlay, hide app */
+            @media (orientation: landscape) {
+                /* Hide all direct children of body EXCEPT the overlay */
+                body > *:not(#orientation-lock-overlay) {
+                    display: none !important;
+                }
+                #orientation-lock-overlay {
+                    display: flex;
+                }
+            }
+
             .top-bar-icon {
                 width: 13vw; height: 13vw;
                 top: 3vh;
@@ -103,8 +142,8 @@
 
             /* Modal Scaling */
             .modal-content {
-                width: 95%; /* Make modal almost full width */
-                max-width: none; /* CRITICAL: Remove the desktop width limit */
+                width: 95%;
+                max-width: none;
                 padding: 4vw;
             }
             .modal-content h2 {
@@ -116,8 +155,6 @@
                 top: 1vh;
                 right: 3vw;
             }
-
-            /* Settings Modal */
             .settings-row {
                 padding: 4vw 2vw;
                 font-size: 4.5vw;
@@ -126,11 +163,7 @@
                 font-size: 4vw;
                 padding: 2vw;
             }
-            .switch {
-                transform: scale(1.3);
-            }
-
-            /* Stats Modal */
+            .switch { transform: scale(1.3); }
             #stats-summary .stats-row {
                 font-size: 4.5vw;
                 padding: 2.5vw 0;
@@ -141,8 +174,6 @@
             .calendar-day { font-size: 4vw; }
             #session-details h4 { font-size: 5vw; }
             #session-details p { font-size: 4vw; }
-
-            /* Info Modal */
             #info-body h3 { font-size: 5.5vw; }
             #info-body p, #info-body li {
                 font-size: 4vw;
@@ -181,6 +212,11 @@
     <div id="settings-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="settings-title"></h2><div class="modal-body"><div class="settings-row"><label id="coaching-label"></label><label class="switch"><input type="checkbox" id="coaching-toggle" checked><span class="slider"></span></label></div><div class="settings-row"><label id="language-label" for="language-select"></label><select id="language-select"><option value="en">English</option><option value="da">Dansk</option></select></div><hr><div class="settings-row" id="debug-container"><label id="debug-label"></label><label class="switch"><input type="checkbox" id="debug-mode"><span class="slider"></span></label></div></div></div></div>
     <div id="stats-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="stats-title"></h2><div id="stats-summary"></div><div id="calendar-header"><span id="calendar-nav-prev" class="calendar-nav"><</span><span id="calendar-month-year"></span><span id="calendar-nav-next" class="calendar-nav">></span></div><div id="calendar-grid"></div><div id="session-details"></div><div id="steps-graph"></div></div></div>
     <div id="info-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="info-title"></h2><div id="info-body" class="modal-body"></div></div></div>
+    
+    <div id="orientation-lock-overlay">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M14.83 4.75C13.29 4.27 11.61 4 10 4c-4.42 0-8 3.58-8 8s3.58 8 8 8c4.08 0 7.44-3.05 7.93-7h-2.02c-.45 2.83-2.98 5-5.91 5-3.31 0-6-2.69-6-6s2.69-6 6-6c1.38 0 2.64.47 3.64 1.25L12 11h6V5l-1.17-.25z"/></svg>
+        <h2 id="rotate-device-title"></h2>
+    </div>
 
     <script>
         // The JavaScript logic is correct and remains unchanged.
@@ -204,7 +240,8 @@
             calendarNavNext: document.getElementById('calendar-nav-next'), sessionDetails: document.getElementById('session-details'),
             stepsGraph: document.getElementById('steps-graph'),
             infoButton: document.getElementById('info-button'), infoModal: document.getElementById('info-modal'),
-            infoTitle: document.getElementById('info-title'), infoBody: document.getElementById('info-body')
+            infoTitle: document.getElementById('info-title'), infoBody: document.getElementById('info-body'),
+            rotateDeviceTitle: document.getElementById('rotate-device-title')
         };
         
         const translations = {
@@ -221,6 +258,7 @@
                 speak_complete: "Workout complete. Well done!",
                 speak_2_min: "2 minutes", speak_1_min: "1 minute", speak_30_sec: "30 seconds",
                 encouragement: ["Every step is a victory.", "You are nurturing your body and soul.", "Well done!"],
+                rotate_device_title: "Please rotate your device",
                 info_text: `<h3>Discover Japanese Interval Walking</h3><p>Welcome to a smarter way to walk! This is a powerful, science-backed method perfected by researchers in Japan. It alternates between bursts of speed and periods of active recovery to transform your health more effectively than a standard walk.</p><h3>Your 30-Minute Workout Plan</h3><p>The structure is simple but incredibly effective. You will repeat a 6-minute cycle five times.</p><p><strong>1. The High-Intensity Phase (3 Minutes)</strong><br>Your goal is to push your pace to about 70-80% of your personal maximum. You should be breathing noticeably and find it challenging to hold a long conversation.</p><p><strong>2. The Recovery Phase (3 Minutes)</strong><br>Ease back to a comfortable, gentle stroll, around 40-50% of your effort. This is your chance to catch your breath while keeping your body moving.</p><h3>Unlock Your Health Benefits</h3><p>This method is designed to deliver comprehensive results:</p><ul><li>❤️ Boost Your Heart Health</li><li>💪 Build Stronger Muscles</li><li>⚡ Supercharge Your Metabolism</li><li>🧠 Enhance Your Mental Clarity</li></ul><h3>Backed by Science</h3><p>This method was pioneered by Dr. Hiroshi Nose and his team at Shinshu University in Japan. A landmark study showed that after just 5 months, participants saw a 9% average increase in aerobic fitness and a 13% boost in leg strength.</p><h3>The Philosophy of Progress</h3><p>This workout embodies two beautiful Japanese concepts: <em>Kaizen (改善)</em>, the principle of continuous improvement, and <em>Wabi-Sabi (侘寂)</em>, finding beauty in the journey. Progress, not perfection, is the goal.</p><p>Ready to start? Let's take the first step together!</p>`
             },
             da: {
@@ -236,6 +274,7 @@
                 speak_complete: "Træning færdig. Godt gået!",
                 speak_2_min: "To minutter", speak_1_min: "Et minut", speak_30_sec: "Tredive sekunder",
                 encouragement: ["Hvert skridt er en sejr.", "Du nærer din krop og sjæl.", "Godt klaret!"],
+                rotate_device_title: "Vend venligst din enhed",
                 info_text: `<h3>Opdag Japansk Intervalgang</h3><p>Velkommen til en smartere måde at gå på! Dette er en kraftfuld, videnskabeligt underbygget metode, perfektioneret af forskere i Japan. Den veksler mellem hurtige ryk og perioder med aktiv restitution for at forbedre dit helbred mere effektivt end en almindelig gåtur.</p><h3>Din 30-Minutters Træningsplan</h3><p>Strukturen er simpel, men utroligt effektiv. Du vil gentage en 6-minutters cyklus fem gange.</p><p><strong>1. Høj-Intensitets Fasen (3 Minutter)</strong><br>Dit mål er at presse dit tempo op til omkring 70-80% af dit personlige maksimum. Din vejrtrækning bør være mærkbart hurtigere, og det skal være svært at føre en lang samtale.</p><p><strong>2. Restitutionsfasen (3 Minutter)</strong><br>Sænk tempoet til en behagelig, rolig gåtur, omkring 40-50% af din indsats. Dette er din chance for at få vejret igen, mens du holder kroppen i gang.</p><h3>Opnå Dine Sundhedsfordele</h3><p>Denne metode er designet til at levere omfattende resultater:</p><ul><li>❤️ Styrk Dit Hjerte</li><li>💪 Opbyg Stærkere Muskler</li><li>⚡ Giv Dit Stofskifte et Boost</li><li>🧠 Forbedr Din Mentale Klarhed</li></ul><h3>Bakket op af Videnskab</h3><p>Metoden blev udviklet af Dr. Hiroshi Nose og hans team ved Shinshu Universitet i Japan. Et banebrydende studie viste, at deltagere efter blot 5 måneder opnåede en gennemsnitlig forbedring på 9% i kondition og 13% i benstyrke.</p><h3>Filosofien om Fremskridt</h3><p>Denne træning omfavner to smukke japanske koncepter: <em>Kaizen (改善)</em>, princippet om kontinuerlig forbedring, og <em>Wabi-Sabi (侘寂)</em>, at finde skønhed i rejsen. Fremskridt, ikke perfektion, er målet.</p><p>Klar til at starte? Lad os tage det første skridt sammen!</p>`
             }
         };
@@ -257,6 +296,7 @@
                 elements.statsTitle.textContent = this.get('stats');
                 elements.infoTitle.textContent = this.get('info_title');
                 elements.infoBody.innerHTML = this.get('info_text');
+                elements.rotateDeviceTitle.textContent = this.get('rotate_device_title');
             }
         };
 
