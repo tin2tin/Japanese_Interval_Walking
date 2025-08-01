@@ -12,7 +12,7 @@ Built with pure HTML, CSS, and JavaScript, it is a lightweight, dependency-free 
 
 - **Guided Interval Workouts**: The app guides users through a 30-minute workout consisting of 5 cycles of 3 minutes of fast-paced walking followed by 3 minutes of recovery pace.
 - **Clean & Focused UI**: A minimalist design inspired by modern fitness apps, featuring a large timer and a dynamic progress ring.
-- **Multilingual Support**: Fully translated into English and Danish (Dansk).
+- **Multilingual Support**: Fully translated into English, Danish, Spanish, Portuguese, and Chinese.
 - **Voice & Audio Cues**:
     - Optional **Voice Coaching** provides verbal instructions for changing pace, milestones, and encouragement.
     - Non-verbal **tonal cues** signal pace changes and workout completion, usable with or without the voice coach.
