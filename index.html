@@ -12,19 +12,10 @@
     <link rel="manifest" href="manifest.json">
     <style>
         :root {
-            /* THEME based on the target image */
-            --bg-color: #242145;
-            --text-color: #FFFFFF;
-            --text-secondary: #B0B0D0;
-            --ring-bg: rgba(0, 0, 0, 0.15);
-            --ring-fast: #FFC300;
-            --ring-normal: #87CEFA;
-            --ring-off: #4F4C7A;
-            --button-bg: #383838;
-            --button-text-color: #ffffff;
-            --icon-color: #FFFFFF;
-            --modal-bg: #2C2C2C;
-            --modal-text: #E0E0E0;
+            --bg-color: #242145; --text-color: #FFFFFF; --text-secondary: #B0B0D0;
+            --ring-bg: rgba(0, 0, 0, 0.15); --ring-fast: #FFC300; --ring-normal: #87CEFA;
+            --ring-off: #4F4C7A; --button-bg: #383838; --button-text-color: #ffffff;
+            --icon-color: #FFFFFF; --modal-bg: #2C2C2C; --modal-text: #E0E0E0;
         }
 
         body {
@@ -38,16 +29,15 @@
         .top-bar-icon { position: absolute; top: 25px; cursor: pointer; z-index: 100; fill: var(--icon-color); width: 24px; height: 24px;}
         #stats-button { left: 25px; }
         #settings-button { right: 25px; }
-        #info-button { right: 25px; top: 65px; width: 22px; height: 22px;}
+        /* UI FIX: Info button moved to top bar */
+        #info-button { right: 65px; top: 25px; width: 22px; height: 22px;}
 
         .main-container { text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; }
-
         #dial-container { position: relative; width: 340px; height: 340px; display: flex; justify-content: center; align-items: center; }
 
         #dial-svg {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            /* UI TWEAK: Rotation for a smaller, 10% gap centered at the top */
-            transform: rotate(-72deg);
+            transform: rotate(-72deg); /* Rotation for a 10% gap centered at the top */
         }
 
         .dial-ring { fill: none; }
@@ -58,39 +48,27 @@
         
         #status-container {
             position: absolute;
-            /* UI TWEAK: Precise positioning to center the icon on the ring path */
-            top: 8px; 
-            left: 50%; transform: translateX(-50%);
+            /* UI FIX: Position icon center on top edge of parent, then translate up by 50% of its own height */
+            top: 0;
+            left: 50%; transform: translate(-50%, -50%);
             height: 48px; width: 48px; z-index: 10;
         }
         #interval-icon { width: 100%; height: 100%; transition: fill 0.5s; }
 
         #interval-display { font-size: 1.5rem; font-weight: 400; color: var(--text-color); margin-bottom: -10px; }
-        
         #interval-timer-display { font-size: 7rem; font-weight: 300; font-feature-settings: "tnum"; letter-spacing: 1px; line-height: 1.1; }
-        
         #total-time-display { font-size: 1rem; color: var(--text-secondary); margin-top: 15px; margin-bottom: 5px; }
         #steps-display { font-size: 1rem; color: var(--text-secondary); min-height: 1.2rem; }
-
-        /* UI FEATURE: Style for the new debug mode display */
-        #debug-mode-display {
-            font-size: 0.9rem;
-            color: var(--ring-fast);
-            font-weight: bold;
-            min-height: 1.1rem;
-            margin-top: 2px;
-            display: none; /* Hidden by default */
-        }
+        #debug-mode-display { font-size: 0.9rem; color: var(--ring-fast); font-weight: bold; min-height: 1.1rem; margin-top: 2px; display: none; }
 
         #start-stop-button {
             position: absolute;
-            /* UI TWEAK: Precise positioning to center the button on the ring path */
-            bottom: 8px;
-            left: 50%; transform: translateX(-50%);
+            /* UI FIX: Position button center on bottom edge of parent, then translate down by 50% of its own height */
+            bottom: 0;
+            left: 50%; transform: translate(-50%, 50%);
             width: 56px; height: 56px;
             border-radius: 50%; background-color: var(--button-bg);
-            border: none; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             display: flex; justify-content: center; align-items: center;
             z-index: 10;
         }
@@ -99,7 +77,6 @@
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
         .modal-content { background-color: var(--modal-bg); color: var(--modal-text); width: 90%; max-width: 500px; text-align: center; border-radius: 10px; position: relative; max-height: 85vh; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
         .modal-body { overflow-y: auto; text-align: left; padding-right: 10px; }
-        .modal-body h3 { color: var(--ring-normal); }
         .close-button { position: absolute; top: 10px; right: 15px; font-size: 2rem; font-weight: bold; cursor: pointer; color: #aaa; }
         .settings-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; padding: 15px 5px; border-bottom: 1px solid #444; }
         #language-select { background-color: #444; color: var(--modal-text); border: 1px solid #555; border-radius: 5px; padding: 5px; font-size: 1rem;}
@@ -113,27 +90,27 @@
         .calendar-day { text-align: center; padding: 5px; border-radius: 4px; position: relative; aspect-ratio: 1 / 1; display: flex; justify-content: center; align-items: center;}
         .day-name { font-size: 0.8rem; color: var(--text-secondary); }
         .workout-day { background-color: var(--ring-normal); color: var(--bg-color); cursor: pointer; font-weight: bold; }
+        #exit-app-button { background-color: #c0392b; color: white; border: none; padding: 10px 20px; margin-top: 20px; border-radius: 5px; cursor: pointer; font-size: 1rem; width: 100%; }
         
-        /* UI FEATURE: Style for the new Exit button */
-        #exit-app-button {
-            background-color: #c0392b; color: white; border: none;
-            padding: 10px 20px; margin-top: 20px; border-radius: 5px;
-            cursor: pointer; font-size: 1rem; width: 100%;
-        }
-        #exit-app-button:hover { background-color: #e74c3c; }
-        
+        /* UI FIX: Happy colors for win pop-up */
+        #encouragement-modal .modal-content { border-top: 5px solid var(--ring-fast); }
+        #encouragement-modal #modal-title { color: var(--ring-fast); }
+
         #gold-gradient stop:nth-child(1) { stop-color: #FFD700; }
         #gold-gradient stop:nth-child(2) { stop-color: #FFA500; }
 
         @media (hover: none) and (pointer: coarse) {
             @media (orientation: landscape) { body > *:not(#orientation-lock-overlay) { display: none !important; } #orientation-lock-overlay { display: flex; } }
-            .top-bar-icon { width: 7vw; height: 7vw; top: 4vh; }
-            #stats-button { left: 6vw; } #settings-button { right: 6vw; } #info-button { right: 6vw; top: 11vh; width: 6.5vw; height: 6.5vw;}
+            /* UI FIX: Much larger icons for touch devices */
+            .top-bar-icon { width: 10vw; height: 10vw; top: 3vh; }
+            #stats-button { left: 5vw; }
+            #settings-button { right: 5vw; }
+            #info-button { right: 18vw; }
             #dial-container { width: 90vw; height: 90vw; }
             #interval-timer-display { font-size: 25vw; }
             #interval-display { font-size: 6.5vw; }
             #total-time-display, #steps-display { font-size: 4.5vw; }
-            #start-stop-button { width: 16vw; height: 16vw; bottom: 1.5vw;}
+            #start-stop-button { width: 16vw; height: 16vw; }
         }
     </style>
 </head>
@@ -162,7 +139,6 @@
     </div>
 
     <div id="settings-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="settings-title"></h2><div class="modal-body"><div class="settings-row"><label id="coaching-label"></label><label class="switch"><input type="checkbox" id="coaching-toggle" checked><span class="slider"></span></label></div><div class="settings-row"><label id="language-label" for="language-select"></label><select id="language-select"><option value="en">English</option><option value="da">Dansk</option></select></div><hr><div class="settings-row" id="debug-container"><label id="debug-label"></label><label class="switch"><input type="checkbox" id="debug-mode"><span class="slider"></span></label></div><button id="exit-app-button">Exit App</button></div></div></div>
-    <!-- Other modals are unchanged -->
     <div id="encouragement-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="modal-title"></h2><p id="encouragement-text"></p></div></div>
     <div id="stats-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="stats-title"></h2><div class="modal-body"><div id="stats-summary"></div><div id="multi-day-chart-container"></div><div id="calendar-header"><span id="calendar-nav-prev" class="calendar-nav"><</span><span id="calendar-month-year"></span><span id="calendar-nav-next" class="calendar-nav">></span></div><div id="calendar-grid"></div><div id="session-details"></div></div></div></div>
     <div id="info-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="info-title"></h2><div id="info-body" class="modal-body"></div></div></div>
@@ -183,7 +159,7 @@
         let useRealSteps = false, isWorkoutCompleting = false, lastPacePromptTime = 0;
         const fullDuration = 1800, debugDuration = 60;
         const icons = { play: `<path d="M8 5v14l11-7z"/>`, pause: `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`, idle: `<path d="M256,85.549c23.636,0,42.779-19.158,42.779-42.77C298.778,19.142,279.636,0,256,0 s-42.778,19.142-42.778,42.778C213.221,66.391,232.364,85.549,256,85.549z M312.196,97.623H199.804c-20.725,0-43.274,22.549-43.274,43.282v143.768c0,10.364,8.396,18.767,18.758,18.767 c10.363,0,18.775-8.403,18.775-18.767V166.468h8.651v320.88c0,13.617,11.035,24.651,24.644,24.651 c13.625,0,24.66-11.034,24.66-24.651V301.138h7.964v186.211c0,13.617,11.034,24.651,24.66,24.651 c13.609,0,24.643-11.034,24.643-24.651v-320.88h8.668v118.205c0,10.364,8.396,18.767,18.758,18.767 c10.379,0,18.759-8.403,18.759-18.767V140.905C355.47,120.172,332.922,97.623,312.196,97.623z"/>`, normal: `<g><path d="M305.536,68.089c-4.674,34.208,27.186,37.936,36.28,28.388c-9.481-1.893-12.576-22.067-7.835-35.344 c4.75-13.276,8.857-39.204-3.548-50.956c-15.878-15.064-40.708-13.531-51.458,5.432c3.16,3.795,10.201,7.798,13.91,12.017 C303,23.832,308.564,45.89,305.536,68.089z"/><path d="M240.234,111.902c26.391,4.031,51.07-14.09,55.12-40.49c4.031-26.401-14.1-51.08-40.5-55.12 c-26.4-4.04-51.079,14.09-55.11,40.491C195.693,83.182,213.834,107.861,240.234,111.902z"/><path d="M428.644,247.425l-32.022-44.73c-7.778-10.56-17.884-19.181-29.542-25.18l-65.406-34.34 c-15.112-6.16-26.022-11.223-41.825-11.96l-18.263-0.522c-11.317-0.189-22.815,3.369-30.716,11.488l-62.245,55.867l-53.918,14.79 c-10.21,2.801-16.437,13.105-14.175,23.448l0.19,0.804c2.224,10.172,11.922,16.901,22.237,15.424l43.433-6.189 c10.835-1.551,21.292-5.072,30.848-10.38l26.25-17.715l1.344,87.122c-0.266,7.012-0.417,11.8-3.36,16.919l-89.015,154.62 c-6.359,11.024-2.602,25.104,8.384,31.51l0.766,0.445c10.399,6.066,23.704,3.133,30.592-6.728l101.686-143.803l38.948,85.238 c3.009,3.965,6.652,7.39,10.788,10.164l77.726,52.044c9.784,6.567,22.994,4.484,30.299-4.779l0.87-1.108 c3.738-4.74,5.413-10.786,4.675-16.777c-0.748-5.99-3.861-11.441-8.649-15.112l-67.034-51.505l-38.816-109.691l3.464-98.336 l46.537,13.986l48.94,48.051c6.151,6.046,15.803,6.718,22.729,1.571l0.473-0.341C432.524,266.02,434.228,255.204,428.644,247.425z"/></g>`, fast: `<g><path d="M222.407,118.397c29.699,0,53.778-24.079,53.778-53.786c0-29.698-24.079-53.769-53.778-53.769 c-29.698,0-53.777,24.07-53.777,53.769C168.63,94.318,192.709,118.397,222.407,118.397z"/><path d="M471.964,466.181l-79.057-50.541l-63.692-100.086L308.249,197.24l68.218-6.34l58.721,37.968 c7.869,5.095,18.291,3.655,24.47-3.396l0.355-0.391c6.856-7.816,6.127-19.713-1.653-26.622l-52.542-46.708 c-5.664-5.032-12.902-7.941-20.478-8.225l-131.109-7.309c-4.028-0.223-7.78,0.079-7.78,0.079c-1.699,0.143-3.397,0.347-5.104,0.632 c-9.549,1.644-18.121,5.592-25.252,11.168l-96.396,58.206l-60.722-33.966c-9.425-5.273-21.34-2.143-26.942,7.087l-0.764,1.254 c-2.784,4.579-3.619,10.065-2.33,15.249c1.289,5.193,4.606,9.656,9.194,12.395l72.352,43.188c9.007,5.379,19.98,6.348,29.796,2.64 l61.051-23.082l20.326,81.964l-85.761-0.338c-11.374-0.036-22.177,5.015-29.433,13.782c-7.255,8.768-10.207,20.318-8.038,31.495 l22.719,116.998c2.516,12.955,14.796,21.633,27.858,19.677l0.97-0.151c12.919-1.939,22.086-13.613,20.886-26.622l-7.691-83.832 l119.328,3.771l55.893,56.312c7.789,7.852,16.663,14.529,26.364,19.819l83.032,45.348c11.63,6.01,25.937,1.707,32.33-9.728 l0.444-0.8C486.938,487.352,483.141,472.957,471.964,466.181z"/><path d="M277.297,32.192c16.948-3.504,35.336,6.704,62.038,13.222c33.3,8.118,61.46-20.184,50.452-44.024 c-6.42,2.757-13.765,17.428-58.704,2.757c-29.103-9.506-54.142-1.28-70.699,10.678C267.195,19.316,272.984,25.247,277.297,32.192z"/></g>` };
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)(); let isAudioContextInitialized = false;
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)(); let isAudioContextInitialized = false; let voices = [];
         const sounds = { up: { notes: [523.25, 659.25, 783.99], duration: 400 }, down: { notes: [783.99, 659.25, 523.25], duration: 400 }, triumph: { notes: [523.25, 659.25, 783.99, 1046.50], duration: 800 }, tick: { notes: [880], duration: 150 } };
         function playSound(type) { if (!isAudioContextInitialized) return; const s = sounds[type]; if (!s) return; const now = audioContext.currentTime; const gain = (type === 'tick') ? 0.15 : 0.3; s.notes.forEach((f, i) => { const dur = s.duration / 1000 / s.notes.length; const st = now + i * dur * 0.9; const o = audioContext.createOscillator(), g = audioContext.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(f, st); g.gain.setValueAtTime(0, st); g.gain.linearRampToValueAtTime(gain, st + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, st + dur); o.connect(g); g.connect(audioContext.destination); o.start(st); o.stop(st + dur); }); }
         function speak(key) { if (!coachingEnabled) return; const u = new SpeechSynthesisUtterance(languageManager.get(key)); u.lang = languageManager.lang; u.rate = 1.0; u.pitch = 1.0; u.voice = voices.find(v => v.lang.startsWith(languageManager.lang) && !v.localService) || voices.find(v => v.lang.startsWith(languageManager.lang)); speechSynthesis.speak(u); }
@@ -203,12 +179,10 @@
         function startFallbackPaceInterval() { paceCheckInterval = setInterval(() => { if (!isRunning) { clearInterval(paceCheckInterval); return; } const isFast = elements.intervalDisplay.textContent === languageManager.get('speak_fast'); const stepsPerMinute = isFast ? Math.floor(Math.random()*20)+110 : Math.floor(Math.random()*10)+70; const stepsThisTick = Math.round(stepsPerMinute / 12); for (let i = 0; i < stepsThisTick; i++) handleStep(); }, 5000); }
 
         async function toggleTimer() { if (isWorkoutCompleting) return; if (!isAudioContextInitialized) { audioContext.resume(); isAudioContextInitialized = true; } if (isRunning) { isRunning = false; clearInterval(timer); if (useRealSteps) stepCounter.stop(); else clearInterval(paceCheckInterval); elements.startStopButton.querySelector('svg').innerHTML = icons.play; if (wakeLock) { await wakeLock.release(); wakeLock = null; } } else { if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) { console.error(`${err.name}, ${err.message}`); } } isRunning = true; elements.startStopButton.querySelector('svg').innerHTML = icons.pause; if (elements.debugModeSwitch.checked) { elements.debugModeDisplay.textContent = languageManager.get('test_mode_active'); elements.debugModeDisplay.style.display = 'block'; } else { elements.debugModeDisplay.style.display = 'none'; } if (!currentSession) { totalSeconds = getDuration(); lastAnnouncementTime = -1; currentSession = { date: new Date().toISOString(), duration: getDuration(), totalSteps: 0, stepsInInterval: 0, intervals: [] }; const permStatus = await stepCounter.requestPermission(); if(permStatus === 'prompt') alert(languageManager.get('sensor_permission')); useRealSteps = stepCounter.start(handleStep); if (!useRealSteps) { const messageKey = stepCounter.status === 'denied' ? 'sensor_denied' : 'sensor_unavailable'; alert(languageManager.get(messageKey)); startFallbackPaceInterval(); } speak('speak_starting'); playSound('up'); updateIntervalState(true); } else { if (useRealSteps) stepCounter.start(handleStep); else startFallbackPaceInterval(); } timer = setInterval(() => { if (!isRunning) { clearInterval(timer); return; } totalSeconds--; updateUIDisplay(); if (totalSeconds <= 0) { workoutComplete(); return; } const intervalLength = getDuration() / (getDuration() === debugDuration ? 2 : 10); const timeElapsed = getDuration() - totalSeconds; if (getDuration() >= 1800) { const intervalTimeRemaining = Math.round(intervalLength - (timeElapsed % intervalLength)); const checkTime = (time) => { if(intervalTimeRemaining === time && lastAnnouncementTime !== time) { if (coachingEnabled) { speak(`speak_${time > 59 ? (time/60) : time}_${time > 59 ? "min" : "sec"}`); } else { playSound('tick'); } lastAnnouncementTime = time; } }; checkTime(120); checkTime(60); checkTime(30); } if (totalSeconds === Math.floor(getDuration() / 2)) speak('speak_halfway'); if (timeElapsed > 0 && timeElapsed % intervalLength === 0) { lastAnnouncementTime = -1; updateIntervalState(); } }, 1000); } }
-        async function workoutComplete() { if ((!isRunning && !currentSession) || isWorkoutCompleting) return; isWorkoutCompleting = true; clearInterval(timer); if (useRealSteps) stepCounter.stop(); else clearInterval(paceCheckInterval); if (window.navigator.vibrate) window.navigator.vibrate([400, 100, 400]); const finishedSession = { ...currentSession }; if (finishedSession.intervals && elements.intervalDisplay.textContent !== languageManager.get('get_ready')) { finishedSession.intervals.push({ type: elements.intervalDisplay.textContent, steps: finishedSession.stepsInInterval }); saveSessionHistory(finishedSession); } const totalStepsInSession = finishedSession.totalSteps || 0; elements.encouragementText.innerHTML = `${languageManager.get('encouragement')[Math.floor(Math.random() * languageManager.get('encouragement').length)]}<br><br><strong>${languageManager.get('total_steps')}: ${totalStepsInSession.toLocaleString(languageManager.lang)}</strong>`; elements.encouragementModal.style.display = 'flex'; playSound('triumph'); speak('speak_complete'); if (wakeLock) { await wakeLock.release(); wakeLock = null; } isRunning = false; currentSession = null; resetUI(); }
+        async function workoutComplete() { if ((!isRunning && !currentSession) || isWorkoutCompleting) return; isWorkoutCompleting = true; clearInterval(timer); if (useRealSteps) stepCounter.stop(); else clearInterval(paceCheckInterval); if (window.navigator.vibrate) window.navigator.vibrate([400, 100, 400]); const finishedSession = { ...currentSession }; if (finishedSession.intervals && elements.intervalDisplay.textContent !== languageManager.get('get_ready')) { finishedSession.intervals.push({ type: elements.intervalDisplay.textContent, steps: finishedSession.stepsInInterval }); saveSessionHistory(finishedSession); } const totalStepsInSession = finishedSession.totalSteps || 0; elements.modalTitle.textContent = languageManager.get('modal_complete'); elements.encouragementText.innerHTML = `${languageManager.get('encouragement')[Math.floor(Math.random() * languageManager.get('encouragement').length)]}<br><br><strong>${languageManager.get('total_steps')}: ${totalStepsInSession.toLocaleString(languageManager.lang)}</strong>`; elements.encouragementModal.style.display = 'flex'; playSound('triumph'); speak('speak_complete'); if (wakeLock) { await wakeLock.release(); wakeLock = null; } isRunning = false; currentSession = null; resetUI(); }
         function resetUI() { totalSeconds = getDuration(); elements.startStopButton.querySelector('svg').innerHTML = icons.play; elements.intervalDisplay.textContent = languageManager.get('get_ready'); elements.stepsDisplay.textContent = `${languageManager.get('steps')}0`; elements.intervalIcon.innerHTML = icons.idle; elements.intervalIcon.style.fill = 'var(--text-secondary)'; drawDial(100, 'var(--ring-off)'); elements.debugModeDisplay.style.display = 'none'; updateUIDisplay(); isWorkoutCompleting = false; }
-        
         function renderCalendar(date) { const history = JSON.parse(localStorage.getItem('sessionHistory') || '[]'); const workoutDates = new Set(history.map(s => new Date(s.date).toDateString())); const year = date.getFullYear(), month = date.getMonth(); elements.calendarMonthYear.textContent = new Date(year, month).toLocaleDateString(languageManager.lang, { month: 'long', year: 'numeric' }); elements.calendarGrid.innerHTML = ''; const dayNames = []; for (let i = 1; i <= 7; i++) { dayNames.push(new Date(2024, 0, i).toLocaleDateString(languageManager.lang, { weekday: 'short' })); } dayNames.forEach(name => { const dayNameEl = document.createElement('div'); dayNameEl.className = 'day-name'; dayNameEl.textContent = name; elements.calendarGrid.appendChild(dayNameEl); }); const firstDayOfMonth = new Date(year, month, 1).getDay(); const spacers = (firstDayOfMonth === 0) ? 6 : firstDayOfMonth - 1; for (let i = 0; i < spacers; i++) { elements.calendarGrid.appendChild(document.createElement('div')); } const daysInMonth = new Date(year, month + 1, 0).getDate(); for (let day = 1; day <= daysInMonth; day++) { const dayEl = document.createElement('div'); dayEl.className = 'calendar-day'; dayEl.textContent = day; const currentDate = new Date(year, month, day); if (workoutDates.has(currentDate.toDateString())) { dayEl.classList.add('workout-day'); dayEl.onclick = () => showSessionDetailsForDate(currentDate); } elements.calendarGrid.appendChild(dayEl); } }
 
-        // Other utility functions are unchanged
         function loadSettings() { languageManager.init(); const savedCoaching = localStorage.getItem('coachingEnabled'); coachingEnabled = savedCoaching === null ? true : (savedCoaching === 'true'); elements.coachingToggle.checked = coachingEnabled; updateLanguageSelectState(); }
         function saveSessionHistory(s) { if (!s) return; const h = JSON.parse(localStorage.getItem('sessionHistory') || '[]'); h.push(s); localStorage.setItem('sessionHistory', JSON.stringify(h)); }
         function calculateAndShowSummaryStats() { const history = JSON.parse(localStorage.getItem('sessionHistory') || '[]'); if (elements.multiDayChartContainer) { elements.multiDayChartContainer.innerHTML = createMultiDayStepChart(history, 7); } if (history.length === 0) { elements.statsSummary.innerHTML = `<p>${languageManager.get('no_history')}</p>`; return; } let totalSteps = 0, totalFastSteps = 0, totalNormalSteps = 0; const workoutDates = []; history.forEach(session => { totalSteps += session.totalSteps || 0; if(session.intervals) { session.intervals.forEach(interval => { const type = interval.type.toLowerCase(); const steps = interval.steps || 0; if (type.includes('fast') || type.includes('hurtig')) totalFastSteps += steps; else totalNormalSteps += steps; }); } workoutDates.push(new Date(session.date)); }); const uniqueDays = [...new Set(workoutDates.map(d => d.setHours(0,0,0,0)))].sort((a,b) => a - b); let currentStreak = 0, maxStreak = 0; if (uniqueDays.length > 0) { currentStreak = 1; maxStreak = 1; for (let i = 1; i < uniqueDays.length; i++) { if (uniqueDays[i] - uniqueDays[i-1] === 86400000) currentStreak++; else currentStreak = 1; maxStreak = Math.max(maxStreak, currentStreak); } } elements.statsSummary.innerHTML = `<div class="stats-row"><strong>${languageManager.get('total_steps')}:</strong> ${totalSteps.toLocaleString(languageManager.lang)}</div><div class="stats-row"><strong>${languageManager.get('fast_steps')}:</strong> ${totalFastSteps.toLocaleString(languageManager.lang)}</div><div class="stats-row"><strong>${languageManager.get('normal_steps')}:</strong> ${totalNormalSteps.toLocaleString(languageManager.lang)}</div><div class="stats-row"><strong>${languageManager.get('streak')}:</strong> ${maxStreak}</div>`; }
