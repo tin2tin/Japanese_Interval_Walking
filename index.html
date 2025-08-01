@@ -1,640 +1,237 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="da">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
     <title>Interval Walking</title>
+    <!-- 
+        NOTE: The manifest.json file will cause a CORS error when you open this HTML file directly.
+        This is normal browser security. To test PWA features, you must run this file from a local web server
+        (e.g., using the "Live Server" extension in VS Code).
+    -->
     <link rel="manifest" href="manifest.json">
     <style>
         :root {
-            --bg-color: #121212; --text-color: #E0E0E0; --text-secondary: #A0A0A0;
-            --ring-bg: #333; --ring-fast: #007BFF; --ring-normal: #28a745;
-            --button-color: #28a745; --button-pause-color: #dc3545; --button-text-color: #ffffff;
-            --icon-color: #A0A0A0; --modal-bg: #2C2C2C; --modal-text: #E0E0E0;
-            --graph-line: var(--ring-fast);
+            /* THEME based on the target image */
+            --bg-color: #242145;
+            --text-color: #FFFFFF;
+            --text-secondary: #B0B0D0;
+            --ring-bg: rgba(0, 0, 0, 0.15);
+            --ring-fast: #FFC300;
+            --ring-normal: #87CEFA;
+            --ring-off: #4F4C7A;
+            --button-bg: #383838;
+            --button-text-color: #ffffff;
+            --icon-color: #FFFFFF;
+            --modal-bg: #2C2C2C;
+            --modal-text: #E0E0E0;
         }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0; padding: 0; display: flex; flex-direction: column;
-            justify-content: space-between; align-items: center;
-            height: 100vh;
-            height: 100dvh; /* Use dynamic viewport height for mobile */
+            justify-content: center; align-items: center;
+            height: 100vh; height: 100dvh;
             background-color: var(--bg-color); color: var(--text-color); -webkit-tap-highlight-color: transparent;
             overflow: hidden;
         }
-        .top-bar-icon { position: absolute; top: 20px; cursor: pointer; z-index: 100; fill: var(--icon-color); width: 32px; height: 32px;}
-        #settings-button { right: 20px; } #stats-button { left: 20px; } #info-button { left: 60px; }
-        .main-container { text-align: center; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; }
-        #status-container { display: flex; flex-direction: column; align-items: center; height: 60px; margin-bottom: 10px; justify-content: flex-end; }
-        #interval-icon { width: 48px; height: 48px; }
-        #dial-container { position: relative; width: 280px; height: 280px; }
-        #dial-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
-        .dial-ring { fill: none; stroke-width: 15; }
-        #dial-background { stroke: var(--ring-bg); }
-        #dial-progress { stroke: var(--ring-fast); stroke-linecap: round; transition: stroke 1s, stroke-dashoffset 1s linear; }
+        .top-bar-icon { position: absolute; top: 25px; cursor: pointer; z-index: 100; fill: var(--icon-color); width: 24px; height: 24px;}
+        #stats-button { left: 25px; }
+        #settings-button { right: 25px; }
+        #info-button { right: 25px; top: 65px; width: 22px; height: 22px;}
+
+        .main-container { text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; }
+
+        #dial-container { position: relative; width: 340px; height: 340px; display: flex; justify-content: center; align-items: center; }
+
+        #dial-svg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            /* UI TWEAK: Rotation for a smaller, 10% gap centered at the top */
+            transform: rotate(-72deg);
+        }
+
+        .dial-ring { fill: none; }
+        #dial-background { stroke: var(--ring-bg); stroke-width: 4; }
+        #dial-progress { stroke: var(--ring-fast); stroke-width: 4; stroke-linecap: round; transition: stroke 1s, stroke-dashoffset 1s linear; }
+
         #dial-content { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        #interval-display { font-size: 1.5rem; font-weight: bold; color: var(--text-secondary); margin-bottom: -10px; }
-        #interval-timer-display { font-size: 5rem; font-weight: 200; letter-spacing: 2px; width: 100%; text-align: center; }
-        #total-time-display { font-size: 1rem; color: var(--text-secondary); margin-top: -15px; margin-bottom: 5px; }
-        #steps-display { font-size: 1.2rem; color: var(--text-secondary); min-height: 1.5rem; }
-        #start-stop-button { width: 80px; height: 80px; border-radius: 50%; background-color: var(--button-color); color: var(--button-text-color); border: none; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.2); transition: background-color 0.3s; margin-top: 20px; display: flex; justify-content: center; align-items: center; }
-        #start-stop-button svg { fill: var(--button-text-color); }
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
+        
+        #status-container {
+            position: absolute;
+            /* UI TWEAK: Precise positioning to center the icon on the ring path */
+            top: 8px; 
+            left: 50%; transform: translateX(-50%);
+            height: 48px; width: 48px; z-index: 10;
+        }
+        #interval-icon { width: 100%; height: 100%; transition: fill 0.5s; }
+
+        #interval-display { font-size: 1.5rem; font-weight: 400; color: var(--text-color); margin-bottom: -10px; }
+        
+        #interval-timer-display { font-size: 7rem; font-weight: 300; font-feature-settings: "tnum"; letter-spacing: 1px; line-height: 1.1; }
+        
+        #total-time-display { font-size: 1rem; color: var(--text-secondary); margin-top: 15px; margin-bottom: 5px; }
+        #steps-display { font-size: 1rem; color: var(--text-secondary); min-height: 1.2rem; }
+
+        /* UI FEATURE: Style for the new debug mode display */
+        #debug-mode-display {
+            font-size: 0.9rem;
+            color: var(--ring-fast);
+            font-weight: bold;
+            min-height: 1.1rem;
+            margin-top: 2px;
+            display: none; /* Hidden by default */
+        }
+
+        #start-stop-button {
+            position: absolute;
+            /* UI TWEAK: Precise positioning to center the button on the ring path */
+            bottom: 8px;
+            left: 50%; transform: translateX(-50%);
+            width: 56px; height: 56px;
+            border-radius: 50%; background-color: var(--button-bg);
+            border: none; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 10;
+        }
+        #start-stop-button svg { fill: var(--button-text-color); width: 22px; height: 22px; }
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
         .modal-content { background-color: var(--modal-bg); color: var(--modal-text); width: 90%; max-width: 500px; text-align: center; border-radius: 10px; position: relative; max-height: 85vh; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
         .modal-body { overflow-y: auto; text-align: left; padding-right: 10px; }
-        .modal-body h3 { color: var(--ring-fast); } .modal-body ul { padding-left: 20px; }
-        #info-body p, #info-body li { font-size: 1rem; }
-        .close-button { position: absolute; top: 10px; right: 15px; font-size: 2rem; font-weight: bold; cursor: pointer; color: #888; }
+        .modal-body h3 { color: var(--ring-normal); }
+        .close-button { position: absolute; top: 10px; right: 15px; font-size: 2rem; font-weight: bold; cursor: pointer; color: #aaa; }
         .settings-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; padding: 15px 5px; border-bottom: 1px solid #444; }
-        .stats-row { padding: 10px 5px; border-bottom: 1px solid #444; text-align: left; }
-        #stats-summary { padding-bottom: 15px; margin-bottom: 15px; border-bottom: 2px solid #555; text-align: left;}
-        #stats-summary h3 { margin-top: 0; }
         #language-select { background-color: #444; color: var(--modal-text); border: 1px solid #555; border-radius: 5px; padding: 5px; font-size: 1rem;}
-        #language-select:disabled { opacity: 0.5; }
         .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #555; transition: .4s; border-radius: 28px; }
         .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--button-color); }
+        input:checked + .slider { background-color: var(--ring-normal); }
         input:checked + .slider:before { transform: translateX(22px); }
-        #calendar-header { display: flex; justify-content: space-between; align-items: center; padding: 10px; }
-        #calendar-nav-prev, #calendar-nav-next { cursor: pointer; font-size: 1.5rem; user-select: none; padding: 0 10px; }
         #calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
         .calendar-day { text-align: center; padding: 5px; border-radius: 4px; position: relative; aspect-ratio: 1 / 1; display: flex; justify-content: center; align-items: center;}
         .day-name { font-size: 0.8rem; color: var(--text-secondary); }
         .workout-day { background-color: var(--ring-normal); color: var(--bg-color); cursor: pointer; font-weight: bold; }
-        #session-details { min-height: 120px; margin-top: 15px; border-top: 1px solid #444; padding-top: 10px; text-align: left;}
-        .graph-container { width: 100%; margin: 10px 0; } .graph-container svg { width: 100%; height: auto; }
-        #multi-day-chart-container { margin-bottom: 20px; }
         
-        /* IMPROVEMENT: Cleaner layout for cadence details */
-        .cadence-container { display: flex; justify-content: space-around; text-align: center; margin: 10px 0; }
-        .cadence-item { flex: 1; padding: 0 5px; }
-
-        #orientation-lock-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: var(--bg-color); z-index: 2000; flex-direction: column;
-            justify-content: center; align-items: center; text-align: center;
+        /* UI FEATURE: Style for the new Exit button */
+        #exit-app-button {
+            background-color: #c0392b; color: white; border: none;
+            padding: 10px 20px; margin-top: 20px; border-radius: 5px;
+            cursor: pointer; font-size: 1rem; width: 100%;
         }
-        #orientation-lock-overlay svg { width: 25vw; height: 25vw; max-width: 100px; max-height: 100px; fill: var(--text-secondary); margin-bottom: 20px; }
-        #orientation-lock-overlay h2 { font-size: 6vw; color: var(--text-color); }
+        #exit-app-button:hover { background-color: #e74c3c; }
+        
+        #gold-gradient stop:nth-child(1) { stop-color: #FFD700; }
+        #gold-gradient stop:nth-child(2) { stop-color: #FFA500; }
 
         @media (hover: none) and (pointer: coarse) {
-            @media (orientation: landscape) {
-                body > *:not(#orientation-lock-overlay) { display: none !important; }
-                #orientation-lock-overlay { display: flex; }
-            }
-            .top-bar-icon { width: 13vw; height: 13vw; top: 3vh; }
-            #settings-button { right: 5vw; } #stats-button { left: 5vw; } #info-button { left: 20vw; }
-            .main-container { justify-content: center; }
-            #status-container { height: auto; margin-bottom: 2vh; }
-            #interval-icon { width: 15vw; height: 15vw; }
-            #dial-container { width: 80vw; height: 80vw; }
-            #interval-timer-display { font-size: 22vw; }
-            #interval-display { font-size: 6vw; }
-            #total-time-display { font-size: 4.5vw; }
-            #steps-display { font-size: 5vw; }
-            #start-stop-button { width: 25vw; height: 25vw; margin-top: 5vh; }
-            #start-stop-button svg { width: 50%; height: 50%; }
-            .modal-content { width: 95%; max-width: none; padding: 4vw; }
-            .modal-content h2 { font-size: 6vw; margin-bottom: 4vh; }
-            .close-button { font-size: 10vw; top: 1vh; right: 3vw; }
-            .settings-row { padding: 4vw 2vw; font-size: 4.5vw; }
-            #language-select { font-size: 4vw; padding: 2vw; }
-            .switch { transform: scale(1.3); }
-            #stats-summary .stats-row { font-size: 4.5vw; padding: 2.5vw 0; }
-            #calendar-nav-prev, #calendar-nav-next { font-size: 8vw; }
-            #calendar-month-year { font-size: 5vw; }
-            .day-name { font-size: 3vw; }
-            .calendar-day { font-size: 4vw; }
-            #session-details h4 { font-size: 5vw; }
-            #session-details p, .cadence-item { font-size: 4vw; }
-            #info-body h3 { font-size: 5.5vw; }
-            #info-body p, #info-body li { font-size: 4vw; line-height: 1.5; }
-            #encouragement-modal #modal-title { font-size: 7vw; }
-            #encouragement-modal #encouragement-text { font-size: 5vw; line-height: 1.5; }
+            @media (orientation: landscape) { body > *:not(#orientation-lock-overlay) { display: none !important; } #orientation-lock-overlay { display: flex; } }
+            .top-bar-icon { width: 7vw; height: 7vw; top: 4vh; }
+            #stats-button { left: 6vw; } #settings-button { right: 6vw; } #info-button { right: 6vw; top: 11vh; width: 6.5vw; height: 6.5vw;}
+            #dial-container { width: 90vw; height: 90vw; }
+            #interval-timer-display { font-size: 25vw; }
+            #interval-display { font-size: 6.5vw; }
+            #total-time-display, #steps-display { font-size: 4.5vw; }
+            #start-stop-button { width: 16vw; height: 16vw; bottom: 1.5vw;}
         }
     </style>
 </head>
 <body>
     <svg id="stats-button" class="top-bar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg>
-    <svg id="info-button" class="top-bar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
     <svg id="settings-button" class="top-bar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41H9.92 c-0.24,0-0.44,0.17-0.48,0.41L9.04,5.08C8.45,5.32,7.92,5.64,7.42,6.02L5.03,5.06C4.81,4.99,4.56,5.06,4.44,5.28L2.52,8.6 C2.41,8.8,2.46,9.07,2.64,9.21l2.03,1.58C4.62,11.06,4.6,11.37,4.6,11.69c0,0.32,0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.4,2.27 c0.04,0.24,0.24,0.41,0.48,0.41h4.16c0.24,0,0.44-0.17,0.48-0.41l0.4-2.27c0.59-0.24,1.12-0.56,1.62-0.94l2.39,0.96 c0.22,0.07,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+    <svg id="info-button" class="top-bar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
 
     <div class="main-container">
-        <div id="status-container">
-            <svg id="interval-icon" viewBox="0 0 512 512"></svg>
-        </div>
         <div id="dial-container">
             <svg id="dial-svg" viewBox="0 0 280 280">
-                <circle class="dial-ring" id="dial-background" cx="140" cy="140" r="125"></circle>
-                <circle class="dial-ring" id="dial-progress" cx="140" cy="140" r="125"></circle>
+                <defs><linearGradient id="gold-gradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%"/><stop offset="100%"/></linearGradient></defs>
+                <circle class="dial-ring" id="dial-background" cx="140" cy="140" r="130"></circle>
+                <circle class="dial-ring" id="dial-progress" cx="140" cy="140" r="130"></circle>
             </svg>
+            <div id="status-container"> <svg id="interval-icon" viewBox="0 0 512 512"></svg> </div>
             <div id="dial-content">
                 <div id="interval-display"></div>
                 <div id="interval-timer-display"></div>
                 <div id="total-time-display"></div>
                 <div id="steps-display"></div>
+                <div id="debug-mode-display"></div>
             </div>
+            <button id="start-stop-button"> <svg viewBox="0 0 24 24"></svg> </button>
         </div>
-        <button id="start-stop-button">
-            <svg viewBox="0 0 24 24" width="32" height="32"></svg>
-        </button>
     </div>
 
+    <div id="settings-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="settings-title"></h2><div class="modal-body"><div class="settings-row"><label id="coaching-label"></label><label class="switch"><input type="checkbox" id="coaching-toggle" checked><span class="slider"></span></label></div><div class="settings-row"><label id="language-label" for="language-select"></label><select id="language-select"><option value="en">English</option><option value="da">Dansk</option></select></div><hr><div class="settings-row" id="debug-container"><label id="debug-label"></label><label class="switch"><input type="checkbox" id="debug-mode"><span class="slider"></span></label></div><button id="exit-app-button">Exit App</button></div></div></div>
+    <!-- Other modals are unchanged -->
     <div id="encouragement-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="modal-title"></h2><p id="encouragement-text"></p></div></div>
-    <div id="settings-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="settings-title"></h2><div class="modal-body"><div class="settings-row"><label id="coaching-label"></label><label class="switch"><input type="checkbox" id="coaching-toggle" checked><span class="slider"></span></label></div><div class="settings-row"><label id="language-label" for="language-select"></label><select id="language-select"><option value="en">English</option><option value="da">Dansk</option></select></div><hr><div class="settings-row" id="debug-container"><label id="debug-label"></label><label class="switch"><input type="checkbox" id="debug-mode"><span class="slider"></span></label></div></div></div></div>
     <div id="stats-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="stats-title"></h2><div class="modal-body"><div id="stats-summary"></div><div id="multi-day-chart-container"></div><div id="calendar-header"><span id="calendar-nav-prev" class="calendar-nav"><</span><span id="calendar-month-year"></span><span id="calendar-nav-next" class="calendar-nav">></span></div><div id="calendar-grid"></div><div id="session-details"></div></div></div></div>
     <div id="info-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="info-title"></h2><div id="info-body" class="modal-body"></div></div></div>
-    
-    <div id="orientation-lock-overlay">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M14.83 4.75C13.29 4.27 11.61 4 10 4c-4.42 0-8 3.58-8 8s3.58 8 8 8c4.08 0 7.44-3.05 7.93-7h-2.02c-.45 2.83-2.98 5-5.91 5-3.31 0-6-2.69-6-6s2.69-6 6-6c1.38 0 2.64.47 3.64 1.25L12 11h6V5l-1.17-.25z"/></svg>
-        <h2 id="rotate-device-title"></h2>
-    </div>
+    <div id="orientation-lock-overlay"></div>
 
     <script>
-        const elements = {
-            timerDisplay: document.getElementById('interval-timer-display'), totalTimeDisplay: document.getElementById('total-time-display'),
-            intervalDisplay: document.getElementById('interval-display'), stepsDisplay: document.getElementById('steps-display'),
-            startStopButton: document.getElementById('start-stop-button'),
-            debugLabel: document.getElementById('debug-label'),
-            debugModeSwitch: document.getElementById('debug-mode'), modalTitle: document.getElementById('modal-title'),
-            encouragementText: document.getElementById('encouragement-text'),
-            settingsButton: document.getElementById('settings-button'), settingsModal: document.getElementById('settings-modal'),
-            settingsTitle: document.getElementById('settings-title'), languageLabel: document.getElementById('language-label'),
-            languageSelect: document.getElementById('language-select'), coachingLabel: document.getElementById('coaching-label'),
-            coachingToggle: document.getElementById('coaching-toggle'), statsButton: document.getElementById('stats-button'),
-            statsModal: document.getElementById('stats-modal'), statsTitle: document.getElementById('stats-title'),
-            statsSummary: document.getElementById('stats-summary'),
-            multiDayChartContainer: document.getElementById('multi-day-chart-container'),
-            encouragementModal: document.getElementById('encouragement-modal'),
-            dialProgress: document.getElementById('dial-progress'), intervalIcon: document.getElementById('interval-icon'),
-            calendarGrid: document.getElementById('calendar-grid'),
-            calendarMonthYear: document.getElementById('calendar-month-year'), calendarNavPrev: document.getElementById('calendar-nav-prev'),
-            calendarNavNext: document.getElementById('calendar-nav-next'), sessionDetails: document.getElementById('session-details'),
-            infoButton: document.getElementById('info-button'), infoModal: document.getElementById('info-modal'),
-            infoTitle: document.getElementById('info-title'), infoBody: document.getElementById('info-body'),
-            rotateDeviceTitle: document.getElementById('rotate-device-title')
-        };
+        const elements = { timerDisplay: document.getElementById('interval-timer-display'), totalTimeDisplay: document.getElementById('total-time-display'), intervalDisplay: document.getElementById('interval-display'), stepsDisplay: document.getElementById('steps-display'), startStopButton: document.getElementById('start-stop-button'), debugLabel: document.getElementById('debug-label'), debugModeSwitch: document.getElementById('debug-mode'), debugModeDisplay: document.getElementById('debug-mode-display'), modalTitle: document.getElementById('modal-title'), encouragementText: document.getElementById('encouragement-text'), settingsButton: document.getElementById('settings-button'), settingsModal: document.getElementById('settings-modal'), settingsTitle: document.getElementById('settings-title'), languageLabel: document.getElementById('language-label'), languageSelect: document.getElementById('language-select'), coachingLabel: document.getElementById('coaching-label'), coachingToggle: document.getElementById('coaching-toggle'), exitAppButton: document.getElementById('exit-app-button'), statsButton: document.getElementById('stats-button'), statsModal: document.getElementById('stats-modal'), statsTitle: document.getElementById('stats-title'), statsSummary: document.getElementById('stats-summary'), multiDayChartContainer: document.getElementById('multi-day-chart-container'), encouragementModal: document.getElementById('encouragement-modal'), dialProgress: document.getElementById('dial-progress'), dialBackground: document.getElementById('dial-background'), intervalIcon: document.getElementById('interval-icon'), calendarGrid: document.getElementById('calendar-grid'), calendarMonthYear: document.getElementById('calendar-month-year'), calendarNavPrev: document.getElementById('calendar-nav-prev'), calendarNavNext: document.getElementById('calendar-nav-next'), sessionDetails: document.getElementById('session-details'), infoButton: document.getElementById('info-button'), infoModal: document.getElementById('info-modal'), infoTitle: document.getElementById('info-title'), infoBody: document.getElementById('info-body'), rotateDeviceTitle: document.getElementById('rotate-device-title') };
+        const translations = { en: {}, da: {} };
+        Object.assign(translations.en, {get_ready: "Get Ready", info_title: "About Interval Walking", steps: "Steps: ", total_remaining: "remaining", speak_fast: "Fast Pace", speak_normal: "Normal Pace", cadence: "steps/min", last_7_days: "Last 7 Days Steps", debug_mode: "Debug Mode (60s)", test_mode_active: "Test Mode Active", exit_app: "Exit App", modal_complete: "Workout Complete!", settings: "Settings", language: "Language", voice_coaching: "Voice Coaching", stats: "Statistics", no_history: "No completed sessions yet.", total_steps: "Total Steps", fast_steps: "Fast Steps", normal_steps: "Normal Steps", streak: "Day Streak", speak_starting: "Starting workout.", speak_fast_instruction: "Begin fast pace.", speak_normal_instruction: "Begin normal pace.", speak_halfway: "Halfway there. Keep up the great work.", speak_pace_prompt: "A little faster now, let's keep the pace.", speak_complete: "Workout complete. Well done!", speak_2_min: "2 minutes remaining.", speak_1_min: "1 minute remaining.", speak_30_sec: "30 seconds.", encouragement: ["Every step is a victory.", "You are nurturing your body and soul.", "Well done!"], rotate_device_title: "Please rotate your device", info_text: `<h3>Discover Japanese Interval Walking</h3><p>This is a powerful, science-backed method that alternates between bursts of speed and periods of active recovery to transform your health.</p><h3>Your 30-Minute Workout Plan</h3><p>You will repeat a 6-minute cycle five times.</p><p><strong>1. High-Intensity (3 Min):</strong> Push your pace to 70-80% of your maximum. Breathing should be heavy.</p><p><strong>2. Recovery (3 Min):</strong> Ease back to a gentle stroll at 40-50% effort to catch your breath.</p><h3>Benefits</h3><ul><li>Boost Your Heart Health</li><li>Build Stronger Muscles</li><li>Supercharge Your Metabolism</li></ul><p>Ready to start? Let's take the first step together!</p>`, sensor_permission: "To count your steps, this app needs access to your device's motion sensors. Please 'Allow' when prompted.", sensor_denied: "Motion sensor access was denied. Step counting will be simulated. To enable real step counting, please grant permission in your browser settings.", sensor_unavailable: "Real step counting is not supported on this device/browser. Steps will be simulated."});
+        Object.assign(translations.da, {get_ready: "Gør klar", info_title: "Om Intervalgang", steps: "Skridt: ", total_remaining: "tilbage", speak_fast: "Hurtigt Tempo", speak_normal: "Normalt Tempo", cadence: "skridt/min", last_7_days: "Sidste 7 dages skridt", debug_mode: "Testtilstand (60s)", test_mode_active: "Testtilstand Aktiv", exit_app: "Luk App", modal_complete: "Træning færdig!", settings: "Indstillinger", language: "Sprog", voice_coaching: "Stemmecoaching", stats: "Statistik", no_history: "Ingen gennemførte træninger endnu.", total_steps: "Totale Skridt", fast_steps: "Hurtige Skridt", normal_steps: "Normale Skridt", streak: "Dages Stime", speak_starting: "Starter træning.", speak_fast_instruction: "Begynd hurtigt tempo.", speak_normal_instruction: "Begynd normalt tempo.", speak_halfway: "Halvvejs. Fortsæt det gode arbejde.", speak_pace_prompt: "Lidt hurtigere nu, hold tempoet.", speak_complete: "Træning færdig. Godt gået!", speak_2_min: "To minutter tilbage.", speak_1_min: "Et minut tilbage.", speak_30_sec: "Tredive sekunder.", encouragement: ["Hvert skridt er en sejr.", "Du nærer din krop og sjæl.", "Godt klaret!"], rotate_device_title: "Vend venligst din enhed", info_text: `<h3>Opdag Japansk Intervalgang</h3><p>Dette er en kraftfuld, videnskabeligt underbygget metode, der veksler mellem hurtige ryk og aktiv restitution for at forbedre dit helbred.</p><h3>Din 30-Minutters Plan</h3><p>Du vil gentage en 6-minutters cyklus fem gange.</p><p><strong>1. Høj-Intensitet (3 Min):</strong> Pres dit tempo til 70-80% af dit maksimum. Din vejrtrækning skal være hurtig.</p><p><strong>2. Restitution (3 Min):</strong> Sænk tempoet til en rolig gåtur på 40-50% indsats for at få vejret igen.</p><h3>Fordele</h3><ul><li>Styrk dit hjerte</li><li>Opbyg stærkere muskler</li><li>Giv dit stofskifte et boost</li></ul><p>Klar til at starte? Lad os tage det første skridt sammen!</p>`, sensor_permission: "For at tælle dine skridt skal denne app have adgang til din enheds bevægelsessensorer. Tillad venligst adgang, når du bliver spurgt.", sensor_denied: "Adgang til bevægelsessensorer blev nægtet. Skridttælling vil blive simuleret. For at aktivere rigtig skridttælling, giv venligst tilladelse i din browsers indstillinger.", sensor_unavailable: "Rigtig skridttælling understøttes ikke på denne enhed/browser. Skridt vil blive simuleret."});
         
-        const translations = {
-            en: {
-                get_ready: "Get Ready", info_title: "About Interval Walking", steps: "Steps:", total_remaining: "Total remaining",
-                cadence: "steps/min", last_7_days: "Last 7 Days Steps",
-                debug_mode: "Debug Mode (60s)", modal_complete: "Workout Complete!",
-                settings: "Settings", language: "Language", voice_coaching: "Voice Coaching", stats: "Statistics",
-                no_history: "No completed sessions yet.",
-                total_steps: "Total Steps", fast_steps: "Fast Steps", normal_steps: "Normal Steps", streak: "Day Streak",
-                speak_starting: "Starting workout.", speak_fast: "Fast Pace", speak_normal: "Normal Pace",
-                speak_fast_instruction: "Begin fast pace. Walk so you are almost out of breath.",
-                speak_normal_instruction: "Begin normal pace. Let your breathing return to normal.",
-                speak_halfway: "Halfway there. Keep up the great work.", speak_pace_prompt: "A little faster now, let's keep the pace.",
-                speak_complete: "Workout complete. Well done!",
-                speak_2_min: "2 minutes", speak_1_min: "1 minute", speak_30_sec: "30 seconds",
-                encouragement: ["Every step is a victory.", "You are nurturing your body and soul.", "Well done!"],
-                rotate_device_title: "Please rotate your device",
-                info_text: `<h3>Discover Japanese Interval Walking</h3><p>This is a powerful, science-backed method that alternates between bursts of speed and periods of active recovery to transform your health.</p><h3>Your 30-Minute Workout Plan</h3><p>You will repeat a 6-minute cycle five times.</p><p><strong>1. High-Intensity (3 Min):</strong> Push your pace to 70-80% of your maximum. Breathing should be heavy.</p><p><strong>2. Recovery (3 Min):</strong> Ease back to a gentle stroll at 40-50% effort to catch your breath.</p><h3>Benefits</h3><ul><li>Boost Your Heart Health</li><li>Build Stronger Muscles</li><li>Supercharge Your Metabolism</li></ul><p>Ready to start? Let's take the first step together!</p>`,
-                sensor_permission: "To count your steps, this app needs access to your device's motion sensors. Please 'Allow' when prompted.",
-                sensor_denied: "Motion sensor access was denied. Step counting will be simulated. To enable real step counting, please grant permission in your browser settings.",
-                sensor_unavailable: "Real step counting is not supported on this device/browser. Steps will be simulated."
-            },
-            da: {
-                get_ready: "Gør klar", info_title: "Om Intervalgang", steps: "Skridt:", total_remaining: "Total tilbage",
-                cadence: "skridt/min", last_7_days: "Sidste 7 dages skridt",
-                debug_mode: "Testtilstand (60s)", modal_complete: "Træning færdig!",
-                settings: "Indstillinger", language: "Sprog", voice_coaching: "Stemmecoaching", stats: "Statistik",
-                no_history: "Ingen gennemførte træninger endnu.",
-                total_steps: "Totale Skridt", fast_steps: "Hurtige Skridt", normal_steps: "Normale Skridt", streak: "Dages Stime",
-                speak_starting: "Starter træning.", speak_fast: "Hurtigt Tempo", speak_normal: "Normalt Tempo",
-                speak_fast_instruction: "Begynd hurtigt tempo. Gå så du er næsten stakåndet.",
-                speak_normal_instruction: "Begynd normalt tempo. Lad din vejrtrækning blive normal.",
-                speak_halfway: "Halvvejs. Fortsæt det gode arbejde.", speak_pace_prompt: "Lidt hurtigere nu, hold tempoet.",
-                speak_complete: "Træning færdig. Godt gået!",
-                speak_2_min: "To minutter", speak_1_min: "Et minut", speak_30_sec: "Tredive sekunder",
-                encouragement: ["Hvert skridt er en sejr.", "Du nærer din krop og sjæl.", "Godt klaret!"],
-                rotate_device_title: "Vend venligst din enhed",
-                info_text: `<h3>Opdag Japansk Intervalgang</h3><p>Dette er en kraftfuld, videnskabeligt underbygget metode, der veksler mellem hurtige ryk og aktiv restitution for at forbedre dit helbred.</p><h3>Din 30-Minutters Plan</h3><p>Du vil gentage en 6-minutters cyklus fem gange.</p><p><strong>1. Høj-Intensitet (3 Min):</strong> Pres dit tempo til 70-80% af dit maksimum. Din vejrtrækning skal være hurtig.</p><p><strong>2. Restitution (3 Min):</strong> Sænk tempoet til en rolig gåtur på 40-50% indsats for at få vejret igen.</p><h3>Fordele</h3><ul><li>Styrk dit hjerte</li><li>Opbyg stærkere muskler</li><li>Giv dit stofskifte et boost</li></ul><p>Klar til at starte? Lad os tage det første skridt sammen!</p>`,
-                sensor_permission: "For at tælle dine skridt skal denne app have adgang til din enheds bevægelsessensorer. Tillad venligst adgang, når du bliver spurgt.",
-                sensor_denied: "Adgang til bevægelsessensorer blev nægtet. Skridttælling vil blive simuleret. For at aktivere rigtig skridttælling, giv venligst tilladelse i din browsers indstillinger.",
-                sensor_unavailable: "Rigtig skridttælling understøttes ikke på denne enhed/browser. Skridt vil blive simuleret."
-            }
-        };
-        const languageManager = {
-            lang: 'en',
-            init: function() {
-                const savedLang = localStorage.getItem('userLanguage') || navigator.language.split('-')[0];
-                if (translations[savedLang]) this.lang = savedLang;
-                elements.languageSelect.value = this.lang; this.applyStrings();
-            },
-            get: function(key) { return translations[this.lang][key] || translations.en[key]; },
-            applyStrings: function() {
-                document.documentElement.lang = this.lang;
-                elements.debugLabel.textContent = this.get('debug_mode');
-                elements.modalTitle.textContent = this.get('modal_complete');
-                elements.settingsTitle.textContent = this.get('settings');
-                elements.languageLabel.textContent = this.get('language');
-                elements.coachingLabel.textContent = this.get('voice_coaching');
-                elements.statsTitle.textContent = this.get('stats');
-                elements.infoTitle.textContent = this.get('info_title');
-                elements.infoBody.innerHTML = this.get('info_text');
-                elements.rotateDeviceTitle.textContent = this.get('rotate_device_title');
-            }
-        };
+        const languageManager = { lang: 'en', init: function() { const savedLang = localStorage.getItem('userLanguage') || navigator.language.split('-')[0]; if (translations[savedLang]) this.lang = savedLang; elements.languageSelect.value = this.lang; this.applyStrings(); }, get: function(key) { return translations[this.lang][key] || translations.en[key]; }, applyStrings: function() { document.documentElement.lang = this.lang; elements.debugLabel.textContent = this.get('debug_mode'); elements.settingsTitle.textContent = this.get('settings'); elements.languageLabel.textContent = this.get('language'); elements.coachingLabel.textContent = this.get('voice_coaching'); elements.statsTitle.textContent = this.get('stats'); elements.infoTitle.textContent = this.get('info_title'); elements.infoBody.innerHTML = this.get('info_text'); elements.exitAppButton.textContent = this.get('exit_app'); if(elements.debugModeDisplay.style.display === 'block') { elements.debugModeDisplay.textContent = this.get('test_mode_active'); } if (elements.rotateDeviceTitle) elements.rotateDeviceTitle.textContent = this.get('rotate_device_title'); }};
+        const stepCounter = { sensor: null, status: 'uninitialized', isStepInProgress: false, lastMagnitude: 0, magnitudeThreshold: 11, stepTimeThreshold: 250, lastStepTime: 0, onStepCallback: null, async requestPermission() { if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') { try { const permissionState = await DeviceMotionEvent.requestPermission(); if (permissionState === 'granted') { this.status = 'ready'; window.addEventListener('devicemotion', this.handleDeviceMotionEvent); return 'granted'; } else { this.status = 'denied'; return 'denied'; } } catch (error) { this.status = 'denied'; return 'denied'; } } if ('Accelerometer' in window) { try { const { state } = await navigator.permissions.query({ name: 'accelerometer' }); if (state === 'granted') { this.status = 'ready'; return 'granted'; } else if (state === 'prompt') { this.status = 'permission_required'; return 'prompt'; } else { this.status = 'denied'; return 'denied'; } } catch (error) { this.status = 'unavailable'; return 'unavailable'; } } this.status = 'unavailable'; return 'unavailable'; }, start(callback) { if (this.status !== 'ready' && this.status !== 'permission_required') return false; this.onStepCallback = callback; try { if ('Accelerometer' in window) { this.sensor = new Accelerometer({ frequency: 10 }); this.sensor.addEventListener('reading', this.handleAccelerometerReading); this.sensor.addEventListener('error', e => { if (e.error.name === 'NotAllowedError') { this.status = 'denied'; alert(languageManager.get('sensor_denied')); } }); this.sensor.start(); this.status = 'active'; return true; } else if (typeof DeviceMotionEvent !== 'undefined') { this.status = 'active'; return true; } } catch(e) { if (e.name === 'SecurityError' || e.name === 'NotAllowedError') { this.status = 'denied'; alert(languageManager.get('sensor_denied')); } else { this.status = 'unavailable'; console.error("Failed to start sensor:", e); } return false; } }, stop() { if (this.sensor) { this.sensor.stop(); this.sensor = null; } window.removeEventListener('devicemotion', this.handleDeviceMotionEvent); this.status = 'ready'; this.onStepCallback = null; }, processAcceleration(x, y, z) { if (x === null || y === null || z === null) return; const magnitude = Math.sqrt(x*x + y*y + z*z); const smoothedMagnitude = 0.7 * magnitude + 0.3 * this.lastMagnitude; this.lastMagnitude = smoothedMagnitude; const now = Date.now(); if (now - this.lastStepTime < this.stepTimeThreshold) return; if (!this.isStepInProgress && smoothedMagnitude > this.magnitudeThreshold) this.isStepInProgress = true; else if (this.isStepInProgress && smoothedMagnitude < (this.magnitudeThreshold - 1)) { this.isStepInProgress = false; this.lastStepTime = now; if (this.onStepCallback) this.onStepCallback(); } }, handleAccelerometerReading: () => stepCounter.processAcceleration(stepCounter.sensor.x, stepCounter.sensor.y, stepCounter.sensor.z), handleDeviceMotionEvent: (event) => { const { x, y, z } = event.accelerationIncludingGravity; stepCounter.processAcceleration(x, y, z); }};
         
-        const stepCounter = {
-            sensor: null, status: 'uninitialized', isStepInProgress: false, lastMagnitude: 0,
-            magnitudeThreshold: 11, stepTimeThreshold: 250, lastStepTime: 0, onStepCallback: null,
-            async requestPermission() {
-                if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-                    try { const permissionState = await DeviceMotionEvent.requestPermission();
-                        if (permissionState === 'granted') { this.status = 'ready'; window.addEventListener('devicemotion', this.handleDeviceMotionEvent); return 'granted'; } 
-                        else { this.status = 'denied'; return 'denied'; }
-                    } catch (error) { this.status = 'denied'; return 'denied'; }
-                }
-                if ('Accelerometer' in window) {
-                    try { const { state } = await navigator.permissions.query({ name: 'accelerometer' });
-                        if (state === 'granted') { this.status = 'ready'; return 'granted'; } 
-                        else if (state === 'prompt') { this.status = 'permission_required'; return 'prompt'; } 
-                        else { this.status = 'denied'; return 'denied'; }
-                    } catch (error) { this.status = 'unavailable'; return 'unavailable'; }
-                }
-                this.status = 'unavailable'; return 'unavailable';
-            },
-            start(callback) {
-                if (this.status !== 'ready' && this.status !== 'permission_required') return false;
-                this.onStepCallback = callback;
-                try {
-                    if ('Accelerometer' in window) {
-                        this.sensor = new Accelerometer({ frequency: 10 });
-                        this.sensor.addEventListener('reading', this.handleAccelerometerReading);
-                        this.sensor.addEventListener('error', e => { if (e.error.name === 'NotAllowedError') { this.status = 'denied'; alert(languageManager.get('sensor_denied')); } });
-                        this.sensor.start(); this.status = 'active'; return true;
-                    } else if (typeof DeviceMotionEvent !== 'undefined') { this.status = 'active'; return true; }
-                } catch(e) {
-                    if (e.name === 'SecurityError' || e.name === 'NotAllowedError') { this.status = 'denied'; alert(languageManager.get('sensor_denied')); } 
-                    else { this.status = 'unavailable'; console.error("Failed to start sensor:", e); }
-                    return false;
-                }
-            },
-            stop() {
-                if (this.sensor) { this.sensor.stop(); this.sensor = null; }
-                window.removeEventListener('devicemotion', this.handleDeviceMotionEvent);
-                this.status = 'ready'; this.onStepCallback = null;
-            },
-            processAcceleration(x, y, z) {
-                if (x === null || y === null || z === null) return;
-                const magnitude = Math.sqrt(x*x + y*y + z*z);
-                const smoothedMagnitude = 0.7 * magnitude + 0.3 * this.lastMagnitude;
-                this.lastMagnitude = smoothedMagnitude; const now = Date.now();
-                if (now - this.lastStepTime < this.stepTimeThreshold) return;
-                if (!this.isStepInProgress && smoothedMagnitude > this.magnitudeThreshold) this.isStepInProgress = true;
-                else if (this.isStepInProgress && smoothedMagnitude < (this.magnitudeThreshold - 1)) {
-                    this.isStepInProgress = false; this.lastStepTime = now;
-                    if (this.onStepCallback) this.onStepCallback();
-                }
-            },
-            handleAccelerometerReading: () => stepCounter.processAcceleration(stepCounter.sensor.x, stepCounter.sensor.y, stepCounter.sensor.z),
-            handleDeviceMotionEvent: (event) => { const { x, y, z } = event.accelerationIncludingGravity; stepCounter.processAcceleration(x, y, z); }
-        };
-
-        let timer, wakeLock = null, totalSeconds, paceCheckInterval;
+        let timer, wakeLock = null, totalSeconds, paceCheckInterval, lastAnnouncementTime;
         let isRunning = false, coachingEnabled = true;
-        let currentSession;
-        let statsDate = new Date();
-        let useRealSteps = false, isWorkoutCompleting = false;
-        let lastPacePromptTime = 0;
-
+        let currentSession, statsDate = new Date();
+        let useRealSteps = false, isWorkoutCompleting = false, lastPacePromptTime = 0;
         const fullDuration = 1800, debugDuration = 60;
+        const icons = { play: `<path d="M8 5v14l11-7z"/>`, pause: `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`, idle: `<path d="M256,85.549c23.636,0,42.779-19.158,42.779-42.77C298.778,19.142,279.636,0,256,0 s-42.778,19.142-42.778,42.778C213.221,66.391,232.364,85.549,256,85.549z M312.196,97.623H199.804c-20.725,0-43.274,22.549-43.274,43.282v143.768c0,10.364,8.396,18.767,18.758,18.767 c10.363,0,18.775-8.403,18.775-18.767V166.468h8.651v320.88c0,13.617,11.035,24.651,24.644,24.651 c13.625,0,24.66-11.034,24.66-24.651V301.138h7.964v186.211c0,13.617,11.034,24.651,24.66,24.651 c13.609,0,24.643-11.034,24.643-24.651v-320.88h8.668v118.205c0,10.364,8.396,18.767,18.758,18.767 c10.379,0,18.759-8.403,18.759-18.767V140.905C355.47,120.172,332.922,97.623,312.196,97.623z"/>`, normal: `<g><path d="M305.536,68.089c-4.674,34.208,27.186,37.936,36.28,28.388c-9.481-1.893-12.576-22.067-7.835-35.344 c4.75-13.276,8.857-39.204-3.548-50.956c-15.878-15.064-40.708-13.531-51.458,5.432c3.16,3.795,10.201,7.798,13.91,12.017 C303,23.832,308.564,45.89,305.536,68.089z"/><path d="M240.234,111.902c26.391,4.031,51.07-14.09,55.12-40.49c4.031-26.401-14.1-51.08-40.5-55.12 c-26.4-4.04-51.079,14.09-55.11,40.491C195.693,83.182,213.834,107.861,240.234,111.902z"/><path d="M428.644,247.425l-32.022-44.73c-7.778-10.56-17.884-19.181-29.542-25.18l-65.406-34.34 c-15.112-6.16-26.022-11.223-41.825-11.96l-18.263-0.522c-11.317-0.189-22.815,3.369-30.716,11.488l-62.245,55.867l-53.918,14.79 c-10.21,2.801-16.437,13.105-14.175,23.448l0.19,0.804c2.224,10.172,11.922,16.901,22.237,15.424l43.433-6.189 c10.835-1.551,21.292-5.072,30.848-10.38l26.25-17.715l1.344,87.122c-0.266,7.012-0.417,11.8-3.36,16.919l-89.015,154.62 c-6.359,11.024-2.602,25.104,8.384,31.51l0.766,0.445c10.399,6.066,23.704,3.133,30.592-6.728l101.686-143.803l38.948,85.238 c3.009,3.965,6.652,7.39,10.788,10.164l77.726,52.044c9.784,6.567,22.994,4.484,30.299-4.779l0.87-1.108 c3.738-4.74,5.413-10.786,4.675-16.777c-0.748-5.99-3.861-11.441-8.649-15.112l-67.034-51.505l-38.816-109.691l3.464-98.336 l46.537,13.986l48.94,48.051c6.151,6.046,15.803,6.718,22.729,1.571l0.473-0.341C432.524,266.02,434.228,255.204,428.644,247.425z"/></g>`, fast: `<g><path d="M222.407,118.397c29.699,0,53.778-24.079,53.778-53.786c0-29.698-24.079-53.769-53.778-53.769 c-29.698,0-53.777,24.07-53.777,53.769C168.63,94.318,192.709,118.397,222.407,118.397z"/><path d="M471.964,466.181l-79.057-50.541l-63.692-100.086L308.249,197.24l68.218-6.34l58.721,37.968 c7.869,5.095,18.291,3.655,24.47-3.396l0.355-0.391c6.856-7.816,6.127-19.713-1.653-26.622l-52.542-46.708 c-5.664-5.032-12.902-7.941-20.478-8.225l-131.109-7.309c-4.028-0.223-7.78,0.079-7.78,0.079c-1.699,0.143-3.397,0.347-5.104,0.632 c-9.549,1.644-18.121,5.592-25.252,11.168l-96.396,58.206l-60.722-33.966c-9.425-5.273-21.34-2.143-26.942,7.087l-0.764,1.254 c-2.784,4.579-3.619,10.065-2.33,15.249c1.289,5.193,4.606,9.656,9.194,12.395l72.352,43.188c9.007,5.379,19.98,6.348,29.796,2.64 l61.051-23.082l20.326,81.964l-85.761-0.338c-11.374-0.036-22.177,5.015-29.433,13.782c-7.255,8.768-10.207,20.318-8.038,31.495 l22.719,116.998c2.516,12.955,14.796,21.633,27.858,19.677l0.97-0.151c12.919-1.939,22.086-13.613,20.886-26.622l-7.691-83.832 l119.328,3.771l55.893,56.312c7.789,7.852,16.663,14.529,26.364,19.819l83.032,45.348c11.63,6.01,25.937,1.707,32.33-9.728 l0.444-0.8C486.938,487.352,483.141,472.957,471.964,466.181z"/><path d="M277.297,32.192c16.948-3.504,35.336,6.704,62.038,13.222c33.3,8.118,61.46-20.184,50.452-44.024 c-6.42,2.757-13.765,17.428-58.704,2.757c-29.103-9.506-54.142-1.28-70.699,10.678C267.195,19.316,272.984,25.247,277.297,32.192z"/></g>` };
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)(); let isAudioContextInitialized = false;
+        const sounds = { up: { notes: [523.25, 659.25, 783.99], duration: 400 }, down: { notes: [783.99, 659.25, 523.25], duration: 400 }, triumph: { notes: [523.25, 659.25, 783.99, 1046.50], duration: 800 }, tick: { notes: [880], duration: 150 } };
+        function playSound(type) { if (!isAudioContextInitialized) return; const s = sounds[type]; if (!s) return; const now = audioContext.currentTime; const gain = (type === 'tick') ? 0.15 : 0.3; s.notes.forEach((f, i) => { const dur = s.duration / 1000 / s.notes.length; const st = now + i * dur * 0.9; const o = audioContext.createOscillator(), g = audioContext.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(f, st); g.gain.setValueAtTime(0, st); g.gain.linearRampToValueAtTime(gain, st + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, st + dur); o.connect(g); g.connect(audioContext.destination); o.start(st); o.stop(st + dur); }); }
+        function speak(key) { if (!coachingEnabled) return; const u = new SpeechSynthesisUtterance(languageManager.get(key)); u.lang = languageManager.lang; u.rate = 1.0; u.pitch = 1.0; u.voice = voices.find(v => v.lang.startsWith(languageManager.lang) && !v.localService) || voices.find(v => v.lang.startsWith(languageManager.lang)); speechSynthesis.speak(u); }
         
-        const icons = { play: `<path d="M8 5v14l11-7z"/>`, pause: `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`, idle: `<g><path d="M256,85.549c23.636,0,42.779-19.158,42.779-42.77C298.778,19.142,279.636,0,256,0 s-42.778,19.142-42.778,42.778C213.221,66.391,232.364,85.549,256,85.549z"/><path d="M312.196,97.623H199.804c-20.725,0-43.274,22.549-43.274,43.282v143.768c0,10.364,8.396,18.767,18.758,18.767 c10.363,0,18.775-8.403,18.775-18.767V166.468h8.651v320.88c0,13.617,11.035,24.651,24.644,24.651 c13.625,0,24.66-11.034,24.66-24.651V301.138h7.964v186.211c0,13.617,11.034,24.651,24.66,24.651 c13.609,0,24.643-11.034,24.643-24.651v-320.88h8.668v118.205c0,10.364,8.396,18.767,18.758,18.767 c10.379,0,18.759-8.403,18.759-18.767V140.905C355.47,120.172,332.922,97.623,312.196,97.623z"/></g>`, normal: `<g><path d="M305.536,68.089c-4.674,34.208,27.186,37.936,36.28,28.388c-9.481-1.893-12.576-22.067-7.835-35.344 c4.75-13.276,8.857-39.204-3.548-50.956c-15.878-15.064-40.708-13.531-51.458,5.432c3.16,3.795,10.201,7.798,13.91,12.017 C303,23.832,308.564,45.89,305.536,68.089z"/><path d="M240.234,111.902c26.391,4.031,51.07-14.09,55.12-40.49c4.031-26.401-14.1-51.08-40.5-55.12 c-26.4-4.04-51.079,14.09-55.11,40.491C195.693,83.182,213.834,107.861,240.234,111.902z"/><path d="M428.644,247.425l-32.022-44.73c-7.778-10.56-17.884-19.181-29.542-25.18l-65.406-34.34 c-15.112-6.16-26.022-11.223-41.825-11.96l-18.263-0.522c-11.317-0.189-22.815,3.369-30.716,11.488l-62.245,55.867l-53.918,14.79 c-10.21,2.801-16.437,13.105-14.175,23.448l0.19,0.804c2.224,10.172,11.922,16.901,22.237,15.424l43.433-6.189 c10.835-1.551,21.292-5.072,30.848-10.38l26.25-17.715l1.344,87.122c-0.266,7.012-0.417,11.8-3.36,16.919l-89.015,154.62 c-6.359,11.024-2.602,25.104,8.384,31.51l0.766,0.445c10.399,6.066,23.704,3.133,30.592-6.728l101.686-143.803l38.948,85.238 c3.009,3.965,6.652,7.39,10.788,10.164l77.726,52.044c9.784,6.567,22.994,4.484,30.299-4.779l0.87-1.108 c3.738-4.74,5.413-10.786,4.675-16.777c-0.748-5.99-3.861-11.441-8.649-15.112l-67.034-51.505l-38.816-109.691l3.464-98.336 l46.537,13.986l48.94,48.051c6.151,6.046,15.803,6.718,22.729,1.571l0.473-0.341C432.524,266.02,434.228,255.204,428.644,247.425z"/></g>`, fast: `<g><path d="M222.407,118.397c29.699,0,53.778-24.079,53.778-53.786c0-29.698-24.079-53.769-53.778-53.769 c-29.698,0-53.777,24.07-53.777,53.769C168.63,94.318,192.709,118.397,222.407,118.397z"/><path d="M471.964,466.181l-79.057-50.541l-63.692-100.086L308.249,197.24l68.218-6.34l58.721,37.968 c7.869,5.095,18.291,3.655,24.47-3.396l0.355-0.391c6.856-7.816,6.127-19.713-1.653-26.622l-52.542-46.708 c-5.664-5.032-12.902-7.941-20.478-8.225l-131.109-7.309c-4.028-0.223-7.78,0.079-7.78,0.079c-1.699,0.143-3.397,0.347-5.104,0.632 c-9.549,1.644-18.121,5.592-25.252,11.168l-96.396,58.206l-60.722-33.966c-9.425-5.273-21.34-2.143-26.942,7.087l-0.764,1.254 c-2.784,4.579-3.619,10.065-2.33,15.249c1.289,5.193,4.606,9.656,9.194,12.395l72.352,43.188c9.007,5.379,19.98,6.348,29.796,2.64 l61.051-23.082l20.326,81.964l-85.761-0.338c-11.374-0.036-22.177,5.015-29.433,13.782c-7.255,8.768-10.207,20.318-8.038,31.495 l22.719,116.998c2.516,12.955,14.796,21.633,27.858,19.677l0.97-0.151c12.919-1.939,22.086-13.613,20.886-26.622l-7.691-83.832 l119.328,3.771l55.893,56.312c7.789,7.852,16.663,14.529,26.364,19.819l83.032,45.348c11.63,6.01,25.937,1.707,32.33-9.728 l0.444-0.8C486.938,487.352,483.141,472.957,471.964,466.181z"/><path d="M277.297,32.192c16.948-3.504,35.336,6.704,62.038,13.222c33.3,8.118,61.46-20.184,50.452-44.024 c-6.42,2.757-13.765,17.428-58.704,2.757c-29.103-9.506-54.142-1.28-70.699,10.678C267.195,19.316,272.984,25.247,277.297,32.192z"/></g>` };
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        let voices = [];
-        const sounds = { up: { notes: [261.63, 329.63, 392.00], duration: 500 }, down: { notes: [392.00, 329.63, 261.63], duration: 500 }, triumph: { notes: [261.63, 329.63, 392.00, 523.25], duration: 800 } };
-        const audioQueue = []; let isAudioChainRunning = false;
-        async function processAudioQueue() { if (audioQueue.length === 0 || !coachingEnabled) { isAudioChainRunning = false; return; } isAudioChainRunning = true; const next = audioQueue.shift(); await next(); processAudioQueue(); }
-        function scheduleAudio(func, important = false) { if (important) { audioQueue.length = 0; speechSynthesis.cancel(); } audioQueue.push(func); if (!isAudioChainRunning) processAudioQueue(); }
-        function playTunedSound(type) { return new Promise(r => { if (!coachingEnabled) { r(); return; } const s = sounds[type]; if (!s) { r(); return; } const now = audioContext.currentTime; const dur = 0.15; s.notes.forEach((f, i) => { const st = now + i * (dur * 0.9); const o = audioContext.createOscillator(), g = audioContext.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(f, st); g.gain.setValueAtTime(0, st); g.gain.linearRampToValueAtTime(0.5, st + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, st + dur); o.connect(g); g.connect(audioContext.destination); o.start(st); o.stop(st + dur); }); setTimeout(r, s.duration); }); }
-        function speak(key) { return new Promise(r => { if (!coachingEnabled) { r(); return; } const u = new SpeechSynthesisUtterance(languageManager.get(key)); u.lang = languageManager.lang; u.rate = 0.9; u.pitch = 1.0; u.voice = voices.find(v => v.lang.startsWith(languageManager.lang) && !v.localService) || voices.find(v => v.lang.startsWith(languageManager.lang) && /Microsoft|Google/i.test(v.name)) || voices.find(v => v.lang.startsWith(languageManager.lang) && v.default); u.onend = r; u.onerror = r; setTimeout(() => speechSynthesis.speak(u), 100); }); }
-        
-        const dialRadius = 125;
+        const dialRadius = 130;
         const circumference = 2 * Math.PI * dialRadius;
-        elements.dialProgress.style.strokeDasharray = circumference;
+        const openRingCircumference = circumference * 0.90; // UI TWEAK: 10% gap is smaller
+        elements.dialProgress.style.strokeDasharray = `${openRingCircumference} ${circumference}`;
+        elements.dialBackground.style.strokeDasharray = `${openRingCircumference} ${circumference}`;
 
-        function drawDial(percent, color) { const offset = circumference - (percent / 100) * circumference; elements.dialProgress.style.strokeDashoffset = offset; elements.dialProgress.style.stroke = color; }
+        function drawDial(percent, color) { const offset = openRingCircumference - (percent / 100) * openRingCircumference; elements.dialProgress.style.strokeDashoffset = offset; if (color === 'var(--ring-fast)') { elements.dialProgress.style.stroke = 'url(#gold-gradient)'; } else { elements.dialProgress.style.stroke = color; } }
         function getDuration() { return elements.debugModeSwitch.checked ? debugDuration : fullDuration; }
         
-        function updateUIDisplay() {
-            const displaySeconds = Math.max(0, totalSeconds);
-            const totalMinutes = Math.floor(displaySeconds / 60), totalSecs = displaySeconds % 60;
-            elements.totalTimeDisplay.textContent = `${languageManager.get('total_remaining')}: ${totalMinutes.toString().padStart(2, '0')}:${totalSecs.toString().padStart(2, '0')}`;
-            const intervalLength = getDuration() / (getDuration() === debugDuration ? 2 : 10);
-            let intervalTimeRemaining = intervalLength - ((getDuration() - displaySeconds) % intervalLength);
-            const intervalMinutes = Math.floor(intervalTimeRemaining / 60), intervalSecs = intervalTimeRemaining % 60;
-            elements.timerDisplay.textContent = `${intervalMinutes.toString().padStart(2, '0')}:${intervalSecs.toString().padStart(2, '0')}`;
-            const percent = (intervalTimeRemaining / intervalLength) * 100;
-            drawDial(percent, elements.dialProgress.style.stroke);
-        }
+        function updateUIDisplay() { const displaySeconds = Math.max(0, totalSeconds); const totalMinutes = Math.floor(displaySeconds / 60), totalSecs = displaySeconds % 60; elements.totalTimeDisplay.textContent = `${totalMinutes.toString().padStart(2, '0')}:${totalSecs.toString().padStart(2, '0')} ${languageManager.get('total_remaining')}`; const intervalLength = getDuration() / (getDuration() === debugDuration ? 2 : 10); let intervalTimeRemaining = intervalLength - ((getDuration() - displaySeconds) % intervalLength); if(intervalTimeRemaining > intervalLength) intervalTimeRemaining = intervalLength; const intervalMinutes = Math.floor(intervalTimeRemaining / 60), intervalSecs = intervalTimeRemaining % 60; elements.timerDisplay.textContent = `${intervalMinutes.toString().padStart(2, '0')}:${intervalSecs.toString().padStart(2, '0')}`; const percent = (intervalTimeRemaining / intervalLength) * 100; drawDial(percent, elements.dialProgress.style.stroke); }
+        function updateIntervalState(isInitialCall = false) { if (!isRunning) return; const duration = getDuration(), timeElapsed = duration - totalSeconds; const intervalLength = duration / (getDuration() === debugDuration ? 2 : 10); const intervalIndex = Math.floor(timeElapsed / intervalLength); const isFast = intervalIndex % 2 === 0; const newIntervalText = isFast ? languageManager.get('speak_fast') : languageManager.get('speak_normal'); if (elements.intervalDisplay.textContent !== newIntervalText || isInitialCall) { if (!isInitialCall && currentSession) currentSession.intervals.push({ type: elements.intervalDisplay.textContent, steps: currentSession.stepsInInterval }); if (currentSession) { currentSession.stepsInInterval = 0; lastPacePromptTime = 0; } elements.intervalDisplay.textContent = newIntervalText; elements.intervalIcon.innerHTML = isFast ? icons.fast : icons.normal; const newColor = isFast ? 'var(--ring-fast)' : 'var(--ring-normal)'; elements.intervalIcon.style.fill = newColor; drawDial(100, newColor); if (!isInitialCall) { if (window.navigator.vibrate) window.navigator.vibrate(isFast ? 300 : [150, 80, 150]); playSound(isFast ? 'up' : 'down'); speak(isFast ? 'speak_fast_instruction' : 'speak_normal_instruction'); } } }
+        function handleStep() { if(!currentSession) return; currentSession.totalSteps++; currentSession.stepsInInterval++; elements.stepsDisplay.textContent = `${languageManager.get('steps')}${currentSession.totalSteps}`; const isFast = elements.intervalDisplay.textContent === languageManager.get('speak_fast'); const intervalLength = getDuration() / (getDuration() === debugDuration ? 2 : 10); const timeInInterval = ((getDuration() - totalSeconds) % intervalLength); if (!isFast || timeInInterval < 15) return; const stepsPerMinute = (currentSession.stepsInInterval / timeInInterval) * 60; const now = Date.now(); if (stepsPerMinute < 100 && (now - lastPacePromptTime > 20000)) { speak('speak_pace_prompt'); lastPacePromptTime = now; } }
+        function startFallbackPaceInterval() { paceCheckInterval = setInterval(() => { if (!isRunning) { clearInterval(paceCheckInterval); return; } const isFast = elements.intervalDisplay.textContent === languageManager.get('speak_fast'); const stepsPerMinute = isFast ? Math.floor(Math.random()*20)+110 : Math.floor(Math.random()*10)+70; const stepsThisTick = Math.round(stepsPerMinute / 12); for (let i = 0; i < stepsThisTick; i++) handleStep(); }, 5000); }
 
-        function updateIntervalState(isInitialCall = false) {
-            if (!isRunning) return;
-            const duration = getDuration(), timeElapsed = duration - totalSeconds;
-            const intervalLength = duration / (getDuration() === debugDuration ? 2 : 10);
-            const intervalIndex = Math.floor(timeElapsed / intervalLength);
-            const isFast = intervalIndex % 2 === 0;
-            const newIntervalText = isFast ? languageManager.get('speak_fast') : languageManager.get('speak_normal');
-            
-            if (elements.intervalDisplay.textContent !== newIntervalText || isInitialCall) {
-                if (!isInitialCall && currentSession) currentSession.intervals.push({ type: elements.intervalDisplay.textContent, steps: currentSession.stepsInInterval });
-                if (currentSession) { currentSession.stepsInInterval = 0; lastPacePromptTime = 0; }
-                elements.intervalDisplay.textContent = newIntervalText;
-                elements.intervalIcon.innerHTML = isFast ? icons.fast : icons.normal;
-                elements.intervalIcon.style.fill = isFast ? 'var(--ring-fast)' : 'var(--ring-normal)';
-                drawDial(100, isFast ? 'var(--ring-fast)' : 'var(--ring-normal)');
-                if (!isInitialCall) {
-                    if (window.navigator.vibrate) window.navigator.vibrate(isFast ? 500 : [200, 100, 200]);
-                    scheduleAudio(() => playTunedSound(isFast ? 'up' : 'down'), true);
-                    scheduleAudio(() => speak(isFast ? 'speak_fast_instruction' : 'speak_normal_instruction'), true);
-                }
-            }
-        }
+        async function toggleTimer() { if (isWorkoutCompleting) return; if (!isAudioContextInitialized) { audioContext.resume(); isAudioContextInitialized = true; } if (isRunning) { isRunning = false; clearInterval(timer); if (useRealSteps) stepCounter.stop(); else clearInterval(paceCheckInterval); elements.startStopButton.querySelector('svg').innerHTML = icons.play; if (wakeLock) { await wakeLock.release(); wakeLock = null; } } else { if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) { console.error(`${err.name}, ${err.message}`); } } isRunning = true; elements.startStopButton.querySelector('svg').innerHTML = icons.pause; if (elements.debugModeSwitch.checked) { elements.debugModeDisplay.textContent = languageManager.get('test_mode_active'); elements.debugModeDisplay.style.display = 'block'; } else { elements.debugModeDisplay.style.display = 'none'; } if (!currentSession) { totalSeconds = getDuration(); lastAnnouncementTime = -1; currentSession = { date: new Date().toISOString(), duration: getDuration(), totalSteps: 0, stepsInInterval: 0, intervals: [] }; const permStatus = await stepCounter.requestPermission(); if(permStatus === 'prompt') alert(languageManager.get('sensor_permission')); useRealSteps = stepCounter.start(handleStep); if (!useRealSteps) { const messageKey = stepCounter.status === 'denied' ? 'sensor_denied' : 'sensor_unavailable'; alert(languageManager.get(messageKey)); startFallbackPaceInterval(); } speak('speak_starting'); playSound('up'); updateIntervalState(true); } else { if (useRealSteps) stepCounter.start(handleStep); else startFallbackPaceInterval(); } timer = setInterval(() => { if (!isRunning) { clearInterval(timer); return; } totalSeconds--; updateUIDisplay(); if (totalSeconds <= 0) { workoutComplete(); return; } const intervalLength = getDuration() / (getDuration() === debugDuration ? 2 : 10); const timeElapsed = getDuration() - totalSeconds; if (getDuration() >= 1800) { const intervalTimeRemaining = Math.round(intervalLength - (timeElapsed % intervalLength)); const checkTime = (time) => { if(intervalTimeRemaining === time && lastAnnouncementTime !== time) { if (coachingEnabled) { speak(`speak_${time > 59 ? (time/60) : time}_${time > 59 ? "min" : "sec"}`); } else { playSound('tick'); } lastAnnouncementTime = time; } }; checkTime(120); checkTime(60); checkTime(30); } if (totalSeconds === Math.floor(getDuration() / 2)) speak('speak_halfway'); if (timeElapsed > 0 && timeElapsed % intervalLength === 0) { lastAnnouncementTime = -1; updateIntervalState(); } }, 1000); } }
+        async function workoutComplete() { if ((!isRunning && !currentSession) || isWorkoutCompleting) return; isWorkoutCompleting = true; clearInterval(timer); if (useRealSteps) stepCounter.stop(); else clearInterval(paceCheckInterval); if (window.navigator.vibrate) window.navigator.vibrate([400, 100, 400]); const finishedSession = { ...currentSession }; if (finishedSession.intervals && elements.intervalDisplay.textContent !== languageManager.get('get_ready')) { finishedSession.intervals.push({ type: elements.intervalDisplay.textContent, steps: finishedSession.stepsInInterval }); saveSessionHistory(finishedSession); } const totalStepsInSession = finishedSession.totalSteps || 0; elements.encouragementText.innerHTML = `${languageManager.get('encouragement')[Math.floor(Math.random() * languageManager.get('encouragement').length)]}<br><br><strong>${languageManager.get('total_steps')}: ${totalStepsInSession.toLocaleString(languageManager.lang)}</strong>`; elements.encouragementModal.style.display = 'flex'; playSound('triumph'); speak('speak_complete'); if (wakeLock) { await wakeLock.release(); wakeLock = null; } isRunning = false; currentSession = null; resetUI(); }
+        function resetUI() { totalSeconds = getDuration(); elements.startStopButton.querySelector('svg').innerHTML = icons.play; elements.intervalDisplay.textContent = languageManager.get('get_ready'); elements.stepsDisplay.textContent = `${languageManager.get('steps')}0`; elements.intervalIcon.innerHTML = icons.idle; elements.intervalIcon.style.fill = 'var(--text-secondary)'; drawDial(100, 'var(--ring-off)'); elements.debugModeDisplay.style.display = 'none'; updateUIDisplay(); isWorkoutCompleting = false; }
         
-        function handleStep() {
-            if(!currentSession) return;
-            currentSession.totalSteps++; currentSession.stepsInInterval++;
-            elements.stepsDisplay.textContent = `${languageManager.get('steps')} ${currentSession.totalSteps}`;
-            const isFast = elements.intervalDisplay.textContent === languageManager.get('speak_fast');
-            const intervalLength = getDuration() / (getDuration() === debugDuration ? 2 : 10);
-            const timeInInterval = ((getDuration() - totalSeconds) % intervalLength);
-            if (!isFast || timeInInterval < 15) return;
-            const stepsPerMinute = (currentSession.stepsInInterval / timeInInterval) * 60;
-            const now = Date.now();
-            if (stepsPerMinute < 100 && (now - lastPacePromptTime > 20000)) { 
-                scheduleAudio(() => speak('speak_pace_prompt'));
-                lastPacePromptTime = now;
-            }
-        }
+        function renderCalendar(date) { const history = JSON.parse(localStorage.getItem('sessionHistory') || '[]'); const workoutDates = new Set(history.map(s => new Date(s.date).toDateString())); const year = date.getFullYear(), month = date.getMonth(); elements.calendarMonthYear.textContent = new Date(year, month).toLocaleDateString(languageManager.lang, { month: 'long', year: 'numeric' }); elements.calendarGrid.innerHTML = ''; const dayNames = []; for (let i = 1; i <= 7; i++) { dayNames.push(new Date(2024, 0, i).toLocaleDateString(languageManager.lang, { weekday: 'short' })); } dayNames.forEach(name => { const dayNameEl = document.createElement('div'); dayNameEl.className = 'day-name'; dayNameEl.textContent = name; elements.calendarGrid.appendChild(dayNameEl); }); const firstDayOfMonth = new Date(year, month, 1).getDay(); const spacers = (firstDayOfMonth === 0) ? 6 : firstDayOfMonth - 1; for (let i = 0; i < spacers; i++) { elements.calendarGrid.appendChild(document.createElement('div')); } const daysInMonth = new Date(year, month + 1, 0).getDate(); for (let day = 1; day <= daysInMonth; day++) { const dayEl = document.createElement('div'); dayEl.className = 'calendar-day'; dayEl.textContent = day; const currentDate = new Date(year, month, day); if (workoutDates.has(currentDate.toDateString())) { dayEl.classList.add('workout-day'); dayEl.onclick = () => showSessionDetailsForDate(currentDate); } elements.calendarGrid.appendChild(dayEl); } }
 
-        function startFallbackPaceInterval() {
-            paceCheckInterval = setInterval(() => {
-                if (!isRunning) { clearInterval(paceCheckInterval); return; }
-                const isFast = elements.intervalDisplay.textContent === languageManager.get('speak_fast');
-                const stepsPerMinute = isFast ? Math.floor(Math.random()*20)+110 : Math.floor(Math.random()*10)+70;
-                const stepsThisTick = Math.round(stepsPerMinute / 12);
-                for (let i = 0; i < stepsThisTick; i++) handleStep();
-            }, 5000);
-        }
-
-        async function toggleTimer() {
-            if (isWorkoutCompleting) return;
-            if (audioContext.state === 'suspended') audioContext.resume();
-            if (isRunning) {
-                isRunning = false; clearInterval(timer);
-                if (useRealSteps) stepCounter.stop(); else clearInterval(paceCheckInterval);
-                elements.startStopButton.querySelector('svg').innerHTML = icons.play;
-                elements.startStopButton.style.backgroundColor = 'var(--button-color)';
-                if (wakeLock) { await wakeLock.release(); wakeLock = null; }
-            } else {
-                if ('wakeLock' in navigator) { try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) { console.error(`${err.name}, ${err.message}`); } }
-                isRunning = true;
-                elements.startStopButton.querySelector('svg').innerHTML = icons.pause;
-                elements.startStopButton.style.backgroundColor = 'var(--button-pause-color)';
-                if (!currentSession) {
-                    totalSeconds = getDuration();
-                    currentSession = { date: new Date().toISOString(), duration: getDuration(), totalSteps: 0, stepsInInterval: 0, intervals: [] };
-                    const permStatus = await stepCounter.requestPermission();
-                    if(permStatus === 'prompt') alert(languageManager.get('sensor_permission'));
-                    useRealSteps = stepCounter.start(handleStep);
-                    if (!useRealSteps) {
-                        const messageKey = stepCounter.status === 'denied' ? 'sensor_denied' : 'sensor_unavailable';
-                        alert(languageManager.get(messageKey));
-                        startFallbackPaceInterval();
-                    }
-                    scheduleAudio(() => speak('speak_starting'), true);
-                    scheduleAudio(() => speak('speak_fast'), true);
-                    updateIntervalState(true);
-                } else {
-                    if (useRealSteps) stepCounter.start(handleStep); else startFallbackPaceInterval();
-                }
-                
-                timer = setInterval(() => {
-                    if (!isRunning) { clearInterval(timer); return; }
-                    
-                    totalSeconds--;
-                    updateUIDisplay();
-
-                    // BUG FIX: Check for completion with <= 0 to prevent a new interval on the final second.
-                    if (totalSeconds <= 0) {
-                        workoutComplete();
-                        // And return immediately to stop further processing.
-                        return;
-                    }
-
-                    const intervalLength = getDuration() / (getDuration() === debugDuration ? 2 : 10);
-                    const timeElapsed = getDuration() - totalSeconds;
-                    
-                    if(getDuration() >= 1800){ 
-                        const intervalTimeRemaining = intervalLength - (timeElapsed % intervalLength);
-                        if (intervalTimeRemaining === 120) scheduleAudio(() => speak('speak_2_min'));
-                        if (intervalTimeRemaining === 60) scheduleAudio(() => speak('speak_1_min'));
-                        if (intervalTimeRemaining === 30) scheduleAudio(() => speak('speak_30_sec'));
-                    }
-                    if (totalSeconds === Math.floor(getDuration() / 2)) scheduleAudio(() => speak('speak_halfway'));
-                    if (timeElapsed > 0 && timeElapsed % intervalLength === 0) updateIntervalState();
-                }, 1000);
-            }
-        }
-
-        async function workoutComplete() {
-            if ((!isRunning && !currentSession) || isWorkoutCompleting) return;
-            isWorkoutCompleting = true;
-            clearInterval(timer);
-            if (useRealSteps) stepCounter.stop(); else clearInterval(paceCheckInterval);
-            if (window.navigator.vibrate) window.navigator.vibrate([500, 100, 500]);
-            
-            const finishedSession = { ...currentSession }; 
-            if (finishedSession.intervals && elements.intervalDisplay.textContent !== languageManager.get('get_ready')) { 
-                finishedSession.intervals.push({ type: elements.intervalDisplay.textContent, steps: finishedSession.stepsInInterval });
-                saveSessionHistory(finishedSession);
-            }
-            
-            const totalStepsInSession = finishedSession.totalSteps || 0;
-            elements.encouragementText.innerHTML = `${languageManager.get('encouragement')[Math.floor(Math.random() * languageManager.get('encouragement').length)]}<br><br><strong>${languageManager.get('total_steps')}: ${totalStepsInSession.toLocaleString(languageManager.lang)}</strong>`;
-            elements.encouragementModal.style.display = 'flex';
-            
-            scheduleAudio(() => playTunedSound('triumph'), true);
-            scheduleAudio(() => speak('speak_complete'), true);
-            if (wakeLock) { await wakeLock.release(); wakeLock = null; }
-            
-            isRunning = false; currentSession = null;
-            resetUI(); 
-        }
-
-        function resetUI() {
-            totalSeconds = getDuration();
-            elements.startStopButton.querySelector('svg').innerHTML = icons.play;
-            elements.startStopButton.style.backgroundColor = 'var(--button-color)';
-            elements.intervalDisplay.textContent = languageManager.get('get_ready');
-            elements.stepsDisplay.textContent = `${languageManager.get('steps')} 0`;
-            elements.intervalIcon.innerHTML = icons.idle;
-            elements.intervalIcon.style.fill = 'var(--text-secondary)';
-            drawDial(100, 'var(--ring-bg)');
-            updateUIDisplay();
-            isWorkoutCompleting = false;
-        }
-
-        function loadSettings() {
-            languageManager.init();
-            const savedCoaching = localStorage.getItem('coachingEnabled');
-            coachingEnabled = savedCoaching === null ? true : (savedCoaching === 'true');
-            elements.coachingToggle.checked = coachingEnabled;
-            updateLanguageSelectState();
-        }
-
+        // Other utility functions are unchanged
+        function loadSettings() { languageManager.init(); const savedCoaching = localStorage.getItem('coachingEnabled'); coachingEnabled = savedCoaching === null ? true : (savedCoaching === 'true'); elements.coachingToggle.checked = coachingEnabled; updateLanguageSelectState(); }
         function saveSessionHistory(s) { if (!s) return; const h = JSON.parse(localStorage.getItem('sessionHistory') || '[]'); h.push(s); localStorage.setItem('sessionHistory', JSON.stringify(h)); }
-        
-        function calculateAndShowSummaryStats() {
-            const history = JSON.parse(localStorage.getItem('sessionHistory') || '[]');
-            elements.multiDayChartContainer.innerHTML = createMultiDayStepChart(history, 7);
-            if (history.length === 0) {
-                elements.statsSummary.innerHTML = `<p>${languageManager.get('no_history')}</p>`; return;
-            }
-            let totalSteps = 0, totalFastSteps = 0, totalNormalSteps = 0;
-            const workoutDates = [];
-            history.forEach(session => {
-                totalSteps += session.totalSteps || 0;
-                if(session.intervals) {
-                    session.intervals.forEach(interval => {
-                        const type = interval.type.toLowerCase(); const steps = interval.steps || 0;
-                        if (type.includes('fast') || type.includes('hurtig')) totalFastSteps += steps;
-                        else totalNormalSteps += steps;
-                    });
-                }
-                workoutDates.push(new Date(session.date));
-            });
-            const uniqueDays = [...new Set(workoutDates.map(d => d.setHours(0,0,0,0)))].sort((a,b) => a - b);
-            let currentStreak = 0, maxStreak = 0;
-            if (uniqueDays.length > 0) {
-                currentStreak = 1; maxStreak = 1;
-                for (let i = 1; i < uniqueDays.length; i++) {
-                    if (uniqueDays[i] - uniqueDays[i-1] === 86400000) currentStreak++;
-                    else currentStreak = 1;
-                    maxStreak = Math.max(maxStreak, currentStreak);
-                }
-            }
-            elements.statsSummary.innerHTML = `
-                <div class="stats-row"><strong>${languageManager.get('total_steps')}:</strong> ${totalSteps.toLocaleString(languageManager.lang)}</div>
-                <div class="stats-row"><strong>${languageManager.get('fast_steps')}:</strong> ${totalFastSteps.toLocaleString(languageManager.lang)}</div>
-                <div class="stats-row"><strong>${languageManager.get('normal_steps')}:</strong> ${totalNormalSteps.toLocaleString(languageManager.lang)}</div>
-                <div class="stats-row"><strong>${languageManager.get('streak')}:</strong> ${maxStreak}</div>`;
-        }
-        
-        function createMultiDayStepChart(history, numDays) {
-            const dataByDay = {}; const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            for (let i = 0; i < numDays; i++) {
-                const date = new Date(today);
-                date.setDate(today.getDate() - i);
-                dataByDay[date.toDateString()] = { steps: 0, date: date };
-            }
-            history.forEach(session => {
-                const sessionDate = new Date(session.date);
-                sessionDate.setHours(0, 0, 0, 0);
-                if (dataByDay[sessionDate.toDateString()]) dataByDay[sessionDate.toDateString()].steps += session.totalSteps || 0;
-            });
-            const chartData = Object.values(dataByDay).sort((a, b) => a.date - b.date);
-            const maxSteps = Math.max(...chartData.map(d => d.steps), 1000);
-            const width = 300, height = 150, barWidth = width / numDays;
-            const bars = chartData.map((data, i) => {
-                const barHeight = (data.steps / maxSteps) * (height - 20);
-                const x = i * barWidth, y = height - barHeight - 20;
-                const dayLabel = data.date.toLocaleDateString(languageManager.lang, { weekday: 'short' });
-                return `<g><rect x="${x + barWidth * 0.1}" y="${y}" width="${barWidth * 0.8}" height="${barHeight}" fill="var(--ring-normal)" rx="2"></rect><text x="${x + barWidth / 2}" y="${height - 5}" font-size="10" fill="var(--text-secondary)" text-anchor="middle">${dayLabel}</text></g>`;
-            }).join('');
-            return `<h4 style="text-align: left; margin-bottom: 5px;">${languageManager.get('last_7_days')}</h4><svg viewBox="0 0 ${width} ${height}" style="width: 100%; height: auto;">${bars}</svg>`;
-        }
-        
-        function renderCalendar(date) {
-            const history = JSON.parse(localStorage.getItem('sessionHistory') || '[]');
-            const workoutDates = new Set(history.map(s => new Date(s.date).toDateString()));
-            const year = date.getFullYear(), month = date.getMonth();
-            elements.calendarMonthYear.textContent = new Date(year, month).toLocaleDateString(languageManager.lang, { month: 'long', year: 'numeric' });
-            elements.calendarGrid.innerHTML = '';
-            const firstDayOfWeek = 1;
-            const dayNames = new Array(7).fill(0).map((_, i) => new Date(2024, 0, (i + firstDayOfWeek)).toLocaleDateString(languageManager.lang, { weekday: 'short' }));
-            dayNames.forEach(name => { const dayNameEl = document.createElement('div'); dayNameEl.className = 'day-name'; dayNameEl.textContent = name; elements.calendarGrid.appendChild(dayNameEl); });
-            const firstDayOfMonth = (new Date(year, month, 1).getDay() - firstDayOfWeek + 7) % 7;
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            for (let i = 0; i < firstDayOfMonth; i++) { elements.calendarGrid.appendChild(document.createElement('div')); }
-            for (let day = 1; day <= daysInMonth; day++) {
-                const dayEl = document.createElement('div'); dayEl.className = 'calendar-day'; dayEl.textContent = day;
-                const currentDate = new Date(year, month, day);
-                if (workoutDates.has(currentDate.toDateString())) {
-                    dayEl.classList.add('workout-day');
-                    dayEl.onclick = () => showSessionDetailsForDate(currentDate);
-                }
-                elements.calendarGrid.appendChild(dayEl);
-            }
-        }
-        
+        function calculateAndShowSummaryStats() { const history = JSON.parse(localStorage.getItem('sessionHistory') || '[]'); if (elements.multiDayChartContainer) { elements.multiDayChartContainer.innerHTML = createMultiDayStepChart(history, 7); } if (history.length === 0) { elements.statsSummary.innerHTML = `<p>${languageManager.get('no_history')}</p>`; return; } let totalSteps = 0, totalFastSteps = 0, totalNormalSteps = 0; const workoutDates = []; history.forEach(session => { totalSteps += session.totalSteps || 0; if(session.intervals) { session.intervals.forEach(interval => { const type = interval.type.toLowerCase(); const steps = interval.steps || 0; if (type.includes('fast') || type.includes('hurtig')) totalFastSteps += steps; else totalNormalSteps += steps; }); } workoutDates.push(new Date(session.date)); }); const uniqueDays = [...new Set(workoutDates.map(d => d.setHours(0,0,0,0)))].sort((a,b) => a - b); let currentStreak = 0, maxStreak = 0; if (uniqueDays.length > 0) { currentStreak = 1; maxStreak = 1; for (let i = 1; i < uniqueDays.length; i++) { if (uniqueDays[i] - uniqueDays[i-1] === 86400000) currentStreak++; else currentStreak = 1; maxStreak = Math.max(maxStreak, currentStreak); } } elements.statsSummary.innerHTML = `<div class="stats-row"><strong>${languageManager.get('total_steps')}:</strong> ${totalSteps.toLocaleString(languageManager.lang)}</div><div class="stats-row"><strong>${languageManager.get('fast_steps')}:</strong> ${totalFastSteps.toLocaleString(languageManager.lang)}</div><div class="stats-row"><strong>${languageManager.get('normal_steps')}:</strong> ${totalNormalSteps.toLocaleString(languageManager.lang)}</div><div class="stats-row"><strong>${languageManager.get('streak')}:</strong> ${maxStreak}</div>`; }
+        function createMultiDayStepChart(history, numDays) { const dataByDay = {}; const today = new Date(); today.setHours(0, 0, 0, 0); for (let i = 0; i < numDays; i++) { const date = new Date(today); date.setDate(today.getDate() - i); dataByDay[date.toDateString()] = { steps: 0, date: date }; } history.forEach(session => { const sessionDate = new Date(session.date); sessionDate.setHours(0, 0, 0, 0); if (dataByDay[sessionDate.toDateString()]) dataByDay[sessionDate.toDateString()].steps += session.totalSteps || 0; }); const chartData = Object.values(dataByDay).sort((a, b) => a.date - b.date); const maxSteps = Math.max(...chartData.map(d => d.steps), 1000); const width = 300, height = 150, barWidth = width / numDays; const bars = chartData.map((data, i) => { const barHeight = (data.steps / maxSteps) * (height - 20); const x = i * barWidth, y = height - barHeight - 20; const dayLabel = data.date.toLocaleDateString(languageManager.lang, { weekday: 'short' }); return `<g><rect x="${x + barWidth * 0.1}" y="${y}" width="${barWidth * 0.8}" height="${barHeight}" fill="var(--ring-normal)" rx="2"></rect><text x="${x + barWidth / 2}" y="${height - 5}" font-size="10" fill="var(--text-secondary)" text-anchor="middle">${dayLabel}</text></g>`; }).join(''); return `<h4 style="text-align: left; margin-bottom: 5px;">${languageManager.get('last_7_days')}</h4><svg viewBox="0 0 ${width} ${height}" style="width: 100%; height: auto;">${bars}</svg>`; }
+        function showStats() { statsDate = new Date(); calculateAndShowSummaryStats(); renderCalendar(statsDate); if(elements.sessionDetails) elements.sessionDetails.innerHTML = ''; elements.statsModal.style.display = 'flex'; }
+        function showSessionDetailsForDate(date) { const history = JSON.parse(localStorage.getItem('sessionHistory') || '[]'); const sessionForDay = history.filter(s => new Date(s.date).toDateString() === date.toDateString()).pop(); if (!sessionForDay) return; const intervalDurationMinutes = (sessionForDay.duration / (getDuration() === debugDuration ? 2 : 10)) / 60; let fastSteps = 0, normalSteps = 0, fastIntervals = 0, normalIntervals = 0; sessionForDay.intervals.forEach(interval => { if (interval.type.toLowerCase().includes('fast') || interval.type.toLowerCase().includes('hurtig')) { fastSteps += interval.steps; fastIntervals++; } else { normalSteps += interval.steps; normalIntervals++; } }); const fastCadence = fastIntervals > 0 ? (fastSteps / (fastIntervals * intervalDurationMinutes)).toFixed(0) : 0; const normalCadence = normalIntervals > 0 ? (normalSteps / (normalIntervals * intervalDurationMinutes)).toFixed(0) : 0; let detailsHTML = `<h4>${date.toLocaleDateString(languageManager.lang, {weekday: 'long', day: 'numeric', month: 'long'})}</h4>`; detailsHTML += `<p>${languageManager.get('total_steps')}: ${sessionForDay.totalSteps.toLocaleString(languageManager.lang)}</p>`; detailsHTML += `<div class="cadence-container"><div class="cadence-item"><strong>${languageManager.get('speak_fast')}</strong><br>${fastCadence} ${languageManager.get('cadence')}</div><div class="cadence-item"><strong>${languageManager.get('speak_normal')}</strong><br>${normalCadence} ${languageManager.get('cadence')}</div></div>`; detailsHTML += `<div class="graph-container">${createBarChart(sessionForDay.intervals, 200, 80)}</div>`; elements.sessionDetails.innerHTML = detailsHTML; }
         function createBarChart(intervals, w, h) { if (!intervals || intervals.length === 0) return ''; const max = Math.max(...intervals.map(i => i.steps), 1); const bw = w / intervals.length; const bars = intervals.map((v, i) => `<rect x="${i*bw}" y="${h-(v.steps/max)*h}" width="${bw*0.8}" height="${(v.steps/max)*h}" fill="${v.type.toLowerCase().includes('fast') || v.type.toLowerCase().includes('hurtig') ? 'var(--ring-fast)' : 'var(--ring-normal)'}" rx="2"/>`).join(''); return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMax meet">${bars}</svg>`; }
-        
-        function showStats() {
-            statsDate = new Date(); calculateAndShowSummaryStats(); renderCalendar(statsDate);
-            elements.sessionDetails.innerHTML = ''; elements.statsModal.style.display = 'flex';
-        }
-
-        function showSessionDetailsForDate(date) {
-            const history = JSON.parse(localStorage.getItem('sessionHistory') || '[]');
-            const sessionForDay = history.filter(s => new Date(s.date).toDateString() === date.toDateString()).pop();
-            if (!sessionForDay) return;
-
-            const intervalDurationMinutes = (sessionForDay.duration / (getDuration() === debugDuration ? 2 : 10)) / 60;
-            let fastSteps = 0, normalSteps = 0, fastIntervals = 0, normalIntervals = 0;
-            sessionForDay.intervals.forEach(interval => {
-                if (interval.type.toLowerCase().includes('fast') || interval.type.toLowerCase().includes('hurtig')) { fastSteps += interval.steps; fastIntervals++; } 
-                else { normalSteps += interval.steps; normalIntervals++; }
-            });
-            const fastCadence = fastIntervals > 0 ? (fastSteps / (fastIntervals * intervalDurationMinutes)).toFixed(0) : 0;
-            const normalCadence = normalIntervals > 0 ? (normalSteps / (normalIntervals * intervalDurationMinutes)).toFixed(0) : 0;
-
-            let detailsHTML = `<h4>${date.toLocaleDateString(languageManager.lang, {weekday: 'long', day: 'numeric', month: 'long'})}</h4>`;
-            detailsHTML += `<p>${languageManager.get('total_steps')}: ${sessionForDay.totalSteps.toLocaleString(languageManager.lang)}</p>`;
-            // IMPROVEMENT: Cleaner layout for cadence details
-            detailsHTML += `<div class="cadence-container">
-                <div class="cadence-item"><strong>${languageManager.get('speak_fast')}</strong><br>${fastCadence} ${languageManager.get('cadence')}</div>
-                <div class="cadence-item"><strong>${languageManager.get('speak_normal')}</strong><br>${normalCadence} ${languageManager.get('cadence')}</div>
-            </div>`;
-            detailsHTML += `<div class="graph-container">${createBarChart(sessionForDay.intervals, 200, 80)}</div>`;
-            elements.sessionDetails.innerHTML = detailsHTML;
-        }
-        
         function populateVoices() { voices = speechSynthesis.getVoices(); }
         function updateLanguageSelectState() { elements.languageSelect.disabled = !coachingEnabled; elements.languageLabel.style.opacity = coachingEnabled ? '1' : '0.5'; }
-
+        
         elements.startStopButton.addEventListener('click', toggleTimer);
         elements.debugModeSwitch.addEventListener('change', () => { if (!isRunning) resetUI(); });
         elements.statsButton.addEventListener('click', showStats);
         elements.infoButton.addEventListener('click', () => elements.infoModal.style.display = 'flex');
         elements.calendarNavPrev.addEventListener('click', () => { statsDate.setMonth(statsDate.getMonth() - 1); renderCalendar(statsDate); });
         elements.calendarNavNext.addEventListener('click', () => { statsDate.setMonth(statsDate.getMonth() + 1); renderCalendar(statsDate); });
-        
         document.querySelectorAll('.modal .close-button').forEach(button => { button.addEventListener('click', (e) => { e.target.closest('.modal').style.display = 'none'; }); });
-
         elements.settingsButton.addEventListener('click', () => elements.settingsModal.style.display = 'flex');
         elements.languageSelect.addEventListener('change', (e) => { languageManager.lang = e.target.value; localStorage.setItem('userLanguage', languageManager.lang); languageManager.applyStrings(); if (!isRunning) resetUI(); });
         elements.coachingToggle.addEventListener('change', (e) => { coachingEnabled = e.target.checked; localStorage.setItem('coachingEnabled', coachingEnabled); updateLanguageSelectState(); if(!coachingEnabled) speechSynthesis.cancel(); });
-        
-        window.onload = () => {
-            populateVoices();
-            if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = populateVoices;
-            loadSettings();
-            resetUI();
-            try {
-                if (screen.orientation && screen.orientation.lock) {
-                    screen.orientation.lock('portrait-primary').catch(err => { console.log("Screen orientation lock failed:", err); });
-                }
-            } catch (err) { console.error("Screen Orientation API not supported.", err); }
-        };
+        elements.exitAppButton.addEventListener('click', () => { if (navigator.app && navigator.app.exitApp) { navigator.app.exitApp(); } else { window.close(); } });
+
+        window.onload = () => { populateVoices(); if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = populateVoices; loadSettings(); resetUI(); try { if (screen.orientation && screen.orientation.lock) { screen.orientation.lock('portrait-primary').catch(err => {}); } } catch (err) { console.error("Screen Orientation API not supported.", err); } };
     </script>
 </body>
 </html>
