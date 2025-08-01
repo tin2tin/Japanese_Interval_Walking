@@ -82,19 +82,23 @@
         .workout-day { background-color: var(--ring-normal); color: var(--bg-color); cursor: pointer; font-weight: bold; }
         #exit-app-button { background-color: #c0392b; color: white; border: none; padding: 10px 20px; margin-top: 20px; border-radius: 5px; cursor: pointer; font-size: 1rem; width: 100%; }
         
-        #encouragement-modal .modal-content { border-top: 5px solid var(--ring-fast); }
-        #encouragement-modal #modal-title { color: var(--ring-fast); }
+        /* UI FIX: Consistent and stylish pop-up design */
+        #encouragement-modal .modal-content, #settings-modal .modal-content { border-top: 5px solid var(--ring-fast); }
+        #encouragement-modal #modal-title, #settings-modal #settings-title { color: var(--ring-fast); }
+        #stats-modal .modal-content, #info-modal .modal-content { border-top: 5px solid var(--ring-normal); }
+        #stats-modal #stats-title, #info-modal #info-title { color: var(--ring-normal); }
+        .modal-body h3 { color: var(--text-secondary); }
 
         #gold-gradient stop:nth-child(1) { stop-color: #FFD700; }
         #gold-gradient stop:nth-child(2) { stop-color: #FFA500; }
 
         @media (hover: none) and (pointer: coarse) {
             @media (orientation: landscape) { body > *:not(#orientation-lock-overlay) { display: none !important; } #orientation-lock-overlay { display: flex; } }
-            /* UI FIX: Much larger icons for touch devices, consistent sizing */
+            
             .top-bar-icon { width: 12vw; height: 12vw; top: 3vh; }
             #stats-button { left: 5vw; }
             #settings-button { right: 5vw; }
-            #info-button { right: 20vw; } /* Positioned next to settings */
+            #info-button { right: 20vw; }
             
             #dial-container { width: 90vw; height: 90vw; }
             #interval-timer-display { font-size: 25vw; }
@@ -103,7 +107,20 @@
             
             #status-container { width: 12vw; height: 12vw; }
             #start-stop-button { width: 18vw; height: 18vw; }
-            #start-stop-button svg { width: 50%; height: 50%; } /* Icon scales with button */
+            #start-stop-button svg { width: 50%; height: 50%; }
+
+            /* UI FIX: Upscaled pop-ups for touch devices */
+            .modal-content { width: 95%; max-width: none; padding: 5vw; }
+            .modal-content h2 { font-size: 7vw; margin-bottom: 4vh; }
+            .modal-body { font-size: 4.5vw; }
+            .close-button { font-size: 10vw; top: 2vh; right: 4vw; }
+            .settings-row { padding: 4vw 1vw; }
+            #language-select, #exit-app-button { font-size: 4.5vw; padding: 3vw; }
+            .switch { transform: scale(1.5); }
+            #calendar-header { font-size: 5vw; }
+            .day-name { font-size: 3.5vw; }
+            .calendar-day { font-size: 4vw; }
+            #session-details, #stats-summary { font-size: 4.5vw; }
         }
     </style>
 </head>
@@ -159,7 +176,7 @@
         
         const dialRadius = 130;
         const circumference = 2 * Math.PI * dialRadius;
-        const openRingCircumference = circumference * 0.90; // 10% gap
+        const openRingCircumference = circumference * 0.90;
         elements.dialProgress.style.strokeDasharray = `${openRingCircumference} ${circumference}`;
         elements.dialBackground.style.strokeDasharray = `${openRingCircumference} ${circumference}`;
 
@@ -175,7 +192,6 @@
         async function workoutComplete() { if ((!isRunning && !currentSession) || isWorkoutCompleting) return; isWorkoutCompleting = true; clearInterval(timer); if (useRealSteps) stepCounter.stop(); else clearInterval(paceCheckInterval); if (window.navigator.vibrate) window.navigator.vibrate([400, 100, 400]); const finishedSession = { ...currentSession }; if (finishedSession.intervals && elements.intervalDisplay.textContent !== languageManager.get('get_ready')) { finishedSession.intervals.push({ type: elements.intervalDisplay.textContent, steps: finishedSession.stepsInInterval }); saveSessionHistory(finishedSession); } const totalStepsInSession = finishedSession.totalSteps || 0; elements.modalTitle.textContent = languageManager.get('modal_complete'); elements.encouragementText.innerHTML = `${languageManager.get('encouragement')[Math.floor(Math.random() * languageManager.get('encouragement').length)]}<br><br><strong>${languageManager.get('total_steps')}: ${totalStepsInSession.toLocaleString(languageManager.lang)}</strong>`; elements.encouragementModal.style.display = 'flex'; playSound('triumph'); speak('speak_complete'); if (wakeLock) { await wakeLock.release(); wakeLock = null; } isRunning = false; currentSession = null; resetUI(); }
         function resetUI() { totalSeconds = getDuration(); elements.startStopButton.querySelector('svg').innerHTML = icons.play; elements.intervalDisplay.textContent = languageManager.get('get_ready'); elements.stepsDisplay.textContent = `0 ${languageManager.get('steps')}`; elements.intervalIcon.innerHTML = icons.idle; elements.intervalIcon.style.fill = 'var(--text-secondary)'; drawDial(100, 'var(--ring-off)'); elements.debugModeDisplay.style.display = 'none'; updateUIDisplay(); isWorkoutCompleting = false; }
         function renderCalendar(date) { const history = JSON.parse(localStorage.getItem('sessionHistory') || '[]'); const workoutDates = new Set(history.map(s => new Date(s.date).toDateString())); const year = date.getFullYear(), month = date.getMonth(); elements.calendarMonthYear.textContent = new Date(year, month).toLocaleDateString(languageManager.lang, { month: 'long', year: 'numeric' }); elements.calendarGrid.innerHTML = ''; const dayNames = []; for (let i = 1; i <= 7; i++) { dayNames.push(new Date(2024, 0, i).toLocaleDateString(languageManager.lang, { weekday: 'short' })); } dayNames.forEach(name => { const dayNameEl = document.createElement('div'); dayNameEl.className = 'day-name'; dayNameEl.textContent = name; elements.calendarGrid.appendChild(dayNameEl); }); const firstDayOfMonth = new Date(year, month, 1).getDay(); const spacers = (firstDayOfMonth === 0) ? 6 : firstDayOfMonth - 1; for (let i = 0; i < spacers; i++) { elements.calendarGrid.appendChild(document.createElement('div')); } const daysInMonth = new Date(year, month + 1, 0).getDate(); for (let day = 1; day <= daysInMonth; day++) { const dayEl = document.createElement('div'); dayEl.className = 'calendar-day'; dayEl.textContent = day; const currentDate = new Date(year, month, day); if (workoutDates.has(currentDate.toDateString())) { dayEl.classList.add('workout-day'); dayEl.onclick = () => showSessionDetailsForDate(currentDate); } elements.calendarGrid.appendChild(dayEl); } }
-        
         function loadSettings() { languageManager.init(); const savedCoaching = localStorage.getItem('coachingEnabled'); coachingEnabled = savedCoaching === null ? true : (savedCoaching === 'true'); elements.coachingToggle.checked = coachingEnabled; updateLanguageSelectState(); }
         function saveSessionHistory(s) { if (!s) return; const h = JSON.parse(localStorage.getItem('sessionHistory') || '[]'); h.push(s); localStorage.setItem('sessionHistory', JSON.stringify(h)); }
         function calculateAndShowSummaryStats() { const history = JSON.parse(localStorage.getItem('sessionHistory') || '[]'); if (elements.multiDayChartContainer) { elements.multiDayChartContainer.innerHTML = createMultiDayStepChart(history, 7); } if (history.length === 0) { elements.statsSummary.innerHTML = `<p>${languageManager.get('no_history')}</p>`; return; } let totalSteps = 0, totalFastSteps = 0, totalNormalSteps = 0; const workoutDates = []; history.forEach(session => { totalSteps += session.totalSteps || 0; if(session.intervals) { session.intervals.forEach(interval => { const type = interval.type.toLowerCase(); const steps = interval.steps || 0; if (type.includes('fast') || type.includes('hurtig')) totalFastSteps += steps; else totalNormalSteps += steps; }); } workoutDates.push(new Date(session.date)); }); const uniqueDays = [...new Set(workoutDates.map(d => d.setHours(0,0,0,0)))].sort((a,b) => a - b); let currentStreak = 0, maxStreak = 0; if (uniqueDays.length > 0) { currentStreak = 1; maxStreak = 1; for (let i = 1; i < uniqueDays.length; i++) { if (uniqueDays[i] - uniqueDays[i-1] === 86400000) currentStreak++; else currentStreak = 1; maxStreak = Math.max(maxStreak, currentStreak); } } elements.statsSummary.innerHTML = `<div class="stats-row"><strong>${languageManager.get('total_steps')}:</strong> ${totalSteps.toLocaleString(languageManager.lang)}</div><div class="stats-row"><strong>${languageManager.get('fast_steps')}:</strong> ${totalFastSteps.toLocaleString(languageManager.lang)}</div><div class="stats-row"><strong>${languageManager.get('normal_steps')}:</strong> ${totalNormalSteps.toLocaleString(languageManager.lang)}</div><div class="stats-row"><strong>${languageManager.get('streak')}:</strong> ${maxStreak}</div>`; }
