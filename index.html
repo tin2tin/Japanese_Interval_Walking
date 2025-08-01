@@ -16,25 +16,39 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            margin: 0; padding: 0; display: flex; flex-direction: column; /* UI FIX: Prepare for flex-grow */
+            margin: 0; padding: 0; display: flex; flex-direction: column;
             height: 100vh; height: 100dvh;
             background-color: var(--bg-color); color: var(--text-color); -webkit-tap-highlight-color: transparent;
             overflow: hidden;
+            box-sizing: border-box;
         }
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+
         .top-bar { position: relative; width: 100%; height: 70px; flex-shrink: 0; }
         .top-bar-icon { position: absolute; top: 25px; cursor: pointer; z-index: 100; fill: var(--icon-color); width: 24px; height: 24px;}
         #stats-button { left: 25px; }
         #settings-button { right: 25px; }
         #info-button { right: 65px; }
 
-        /* UI FIX: Ensure main container is perfectly centered vertically and horizontally */
         .main-container { flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%;}
-        #dial-container { position: relative; width: 340px; height: 340px; display: flex; justify-content: center; align-items: center; }
+
+        /* FIX: Removed flexbox properties (display, justify-content, align-items).
+           The container's sole purpose is now to be a sized, positioned context for its children,
+           which simplifies the layout and prevents potential rendering bugs on mobile. */
+        #dial-container { position: relative; width: 340px; height: 340px; }
+
         #dial-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-72deg); }
         .dial-ring { fill: none; }
         #dial-background { stroke: var(--ring-bg); stroke-width: 4; }
         #dial-progress { stroke: var(--ring-fast); stroke-width: 4; stroke-linecap: round; transition: stroke 1s, stroke-dashoffset 1s linear; }
-        #dial-content { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+
+        /* FIX: Changed to absolute positioning to layer it precisely within its parent.
+           This makes its layout consistent with sibling elements (like the SVG ring and buttons)
+           and avoids complex flexbox interactions that can be unreliable on some devices. */
+        #dial-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        
         #status-container { position: absolute; top: 0; left: 50%; transform: translate(-50%, -50%); height: 48px; width: 48px; z-index: 10; }
         #interval-icon { width: 100%; height: 100%; transition: fill 0.5s; }
         #interval-display { font-size: 1.5rem; font-weight: 400; color: var(--text-color); margin-bottom: -10px; }
@@ -46,7 +60,7 @@
         #start-stop-button svg { fill: var(--button-text-color); width: 22px; height: 22px; }
 
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
-        .modal-content { background-color: var(--modal-bg); color: var(--modal-text); width: 90%; max-width: 500px; text-align: center; border-radius: 10px; position: relative; max-height: 85vh; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
+        .modal-content { background-color: var(--modal-bg); color: var(--modal-text); width: 90%; max-width: 500px; text-align: center; border-radius: 10px; position: relative; max-height: 85vh; display: flex; flex-direction: column; padding: 20px; }
         .modal-body { overflow-y: auto; text-align: left; padding: 0 5px 5px 5px; }
         .close-button { position: absolute; top: 10px; right: 15px; font-size: 2rem; font-weight: bold; cursor: pointer; color: #aaa; }
         #exit-app-button { background-color: #c0392b; color: white; border: none; padding: 10px 20px; margin-top: 20px; border-radius: 5px; cursor: pointer; font-size: 1rem; width: 100%; }
