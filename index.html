@@ -27,7 +27,15 @@
         #settings-button { right: 25px; }
         #info-button { right: 65px; }
 
-        .main-container { flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%;}
+        /* UI FIX: Use CSS Grid for more robust centering, which resolves horizontal alignment
+           bugs observed on some mobile browsers. `place-items: center` is a shorthand
+           that perfectly centers the dial both horizontally and vertically. */
+        .main-container {
+            flex-grow: 1;
+            display: grid;
+            place-items: center;
+            width: 100%;
+        }
         
         #dial-container {
             position: relative;
@@ -36,10 +44,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            /* UI FIX: Add vertical margins to account for protruding elements.
-               This makes the flexbox layout center the entire visual group, not just the dial.
-               - Top icon (#status-container) is 48px high, protruding 24px.
-               - Bottom button (#start-stop-button) is 56px high, protruding 28px. */
+            /* This vertical margin fix is still required to account for protruding elements */
             margin-top: 24px;
             margin-bottom: 28px;
         }
@@ -109,7 +114,7 @@
             #dial-container {
                 width: 90vw;
                 height: 90vw;
-                /* UI FIX: Apply responsive margins for touch devices.
+                /* Apply responsive margins for touch devices.
                    - #status-container is 12vw high -> 6vw protrusion.
                    - #start-stop-button is 18vw high -> 9vw protrusion. */
                 margin-top: 6vw;
@@ -174,7 +179,6 @@
     <div id="orientation-lock-overlay"></div>
 
     <script>
-        // --- JavaScript is unchanged ---
         const elements = { timerDisplay: document.getElementById('interval-timer-display'), totalTimeDisplay: document.getElementById('total-time-display'), intervalDisplay: document.getElementById('interval-display'), stepsDisplay: document.getElementById('steps-display'), startStopButton: document.getElementById('start-stop-button'), debugLabel: document.getElementById('debug-label'), debugModeSwitch: document.getElementById('debug-mode'), debugModeDisplay: document.getElementById('debug-mode-display'), modalTitle: document.getElementById('modal-title'), encouragementText: document.getElementById('encouragement-text'), settingsButton: document.getElementById('settings-button'), settingsModal: document.getElementById('settings-modal'), settingsTitle: document.getElementById('settings-title'), languageLabel: document.getElementById('language-label'), languageSelect: document.getElementById('language-select'), coachingLabel: document.getElementById('coaching-label'), coachingToggle: document.getElementById('coaching-toggle'), exitAppButton: document.getElementById('exit-app-button'), statsButton: document.getElementById('stats-button'), statsModal: document.getElementById('stats-modal'), statsTitle: document.getElementById('stats-title'), statsSummary: document.getElementById('stats-summary'), multiDayChartContainer: document.getElementById('multi-day-chart-container'), encouragementModal: document.getElementById('encouragement-modal'), dialProgress: document.getElementById('dial-progress'), dialBackground: document.getElementById('dial-background'), intervalIcon: document.getElementById('interval-icon'), calendarGrid: document.getElementById('calendar-grid'), calendarMonthYear: document.getElementById('calendar-month-year'), calendarNavPrev: document.getElementById('calendar-nav-prev'), calendarNavNext: document.getElementById('calendar-nav-next'), sessionDetails: document.getElementById('session-details'), infoButton: document.getElementById('info-button'), infoModal: document.getElementById('info-modal'), infoTitle: document.getElementById('info-title'), infoBody: document.getElementById('info-body'), rotateDeviceTitle: document.getElementById('rotate-device-title') };
         const translations = { en: {}, da: {} };
         Object.assign(translations.en, {get_ready: "Get Ready", info_title: "About", steps: "steps", total_remaining: "remaining", speak_fast: "Fast Pace", speak_normal: "Normal Pace", cadence: "steps/min", last_7_days: "Last 7 Days Steps", debug_mode: "Debug Mode (60s)", test_mode_active: "Test Mode Active", exit_app: "Exit App", modal_complete: "Workout Complete!", settings: "Settings", language: "Language", voice_coaching: "Voice Coaching", stats: "Statistics", no_history: "No completed sessions yet.", total_steps: "Total Steps", fast_steps: "Fast Steps", normal_steps: "Normal Steps", streak: "Day Streak", speak_starting: "Starting workout.", speak_fast_instruction: "Begin fast pace.", speak_normal_instruction: "Begin normal pace.", speak_halfway: "Halfway there. Keep up the great work.", speak_pace_prompt: "A little faster now, let's keep the pace.", speak_complete: "Workout complete. Well done!", speak_2_min: "2 minutes remaining.", speak_1_min: "1 minute remaining.", speak_30_sec: "30 seconds.", encouragement: ["Every step is a victory.", "You are nurturing your body and soul.", "Well done!"], rotate_device_title: "Please rotate your device", info_text: `<h3>Discover Japanese Interval Walking</h3><p>This is a powerful, science-backed method that alternates between bursts of speed and periods of active recovery to transform your health.</p><h3>Your 30-Minute Workout Plan</h3><p>You will repeat a 6-minute cycle five times.</p><p><strong>1. High-Intensity (3 Min):</strong> Push your pace to 70-80% of your maximum. Breathing should be heavy.</p><p><strong>2. Recovery (3 Min):</strong> Ease back to a gentle stroll at 40-50% effort to catch your breath.</p><h3>Benefits</h3><ul><li>Boost Your Heart Health</li><li>Build Stronger Muscles</li><li>Supercharge Your Metabolism</li></ul><p>Ready to start? Let's take the first step together!</p>`, sensor_permission: "To count your steps, this app needs access to your device's motion sensors. Please 'Allow' when prompted.", sensor_denied: "Motion sensor access was denied. Step counting will be simulated. To enable real step counting, please grant permission in your browser settings.", sensor_unavailable: "Real step counting is not supported on this device/browser. Steps will be simulated."});
