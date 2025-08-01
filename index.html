@@ -20,12 +20,7 @@
             height: 100vh; height: 100dvh;
             background-color: var(--bg-color); color: var(--text-color); -webkit-tap-highlight-color: transparent;
             overflow: hidden;
-            box-sizing: border-box;
         }
-        *, *:before, *:after {
-            box-sizing: inherit;
-        }
-
         .top-bar { position: relative; width: 100%; height: 70px; flex-shrink: 0; }
         .top-bar-icon { position: absolute; top: 25px; cursor: pointer; z-index: 100; fill: var(--icon-color); width: 24px; height: 24px;}
         #stats-button { left: 25px; }
@@ -33,22 +28,27 @@
         #info-button { right: 65px; }
 
         .main-container { flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%;}
-
-        /* FIX: Removed flexbox properties (display, justify-content, align-items).
-           The container's sole purpose is now to be a sized, positioned context for its children,
-           which simplifies the layout and prevents potential rendering bugs on mobile. */
-        #dial-container { position: relative; width: 340px; height: 340px; }
+        
+        #dial-container {
+            position: relative;
+            width: 340px;
+            height: 340px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* UI FIX: Add vertical margins to account for protruding elements.
+               This makes the flexbox layout center the entire visual group, not just the dial.
+               - Top icon (#status-container) is 48px high, protruding 24px.
+               - Bottom button (#start-stop-button) is 56px high, protruding 28px. */
+            margin-top: 24px;
+            margin-bottom: 28px;
+        }
 
         #dial-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-72deg); }
         .dial-ring { fill: none; }
         #dial-background { stroke: var(--ring-bg); stroke-width: 4; }
         #dial-progress { stroke: var(--ring-fast); stroke-width: 4; stroke-linecap: round; transition: stroke 1s, stroke-dashoffset 1s linear; }
-
-        /* FIX: Changed to absolute positioning to layer it precisely within its parent.
-           This makes its layout consistent with sibling elements (like the SVG ring and buttons)
-           and avoids complex flexbox interactions that can be unreliable on some devices. */
-        #dial-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        
+        #dial-content { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         #status-container { position: absolute; top: 0; left: 50%; transform: translate(-50%, -50%); height: 48px; width: 48px; z-index: 10; }
         #interval-icon { width: 100%; height: 100%; transition: fill 0.5s; }
         #interval-display { font-size: 1.5rem; font-weight: 400; color: var(--text-color); margin-bottom: -10px; }
@@ -60,7 +60,7 @@
         #start-stop-button svg { fill: var(--button-text-color); width: 22px; height: 22px; }
 
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
-        .modal-content { background-color: var(--modal-bg); color: var(--modal-text); width: 90%; max-width: 500px; text-align: center; border-radius: 10px; position: relative; max-height: 85vh; display: flex; flex-direction: column; padding: 20px; }
+        .modal-content { background-color: var(--modal-bg); color: var(--modal-text); width: 90%; max-width: 500px; text-align: center; border-radius: 10px; position: relative; max-height: 85vh; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
         .modal-body { overflow-y: auto; text-align: left; padding: 0 5px 5px 5px; }
         .close-button { position: absolute; top: 10px; right: 15px; font-size: 2rem; font-weight: bold; cursor: pointer; color: #aaa; }
         #exit-app-button { background-color: #c0392b; color: white; border: none; padding: 10px 20px; margin-top: 20px; border-radius: 5px; cursor: pointer; font-size: 1rem; width: 100%; }
@@ -106,7 +106,16 @@
             #settings-button { right: 5vw; }
             #info-button { right: 20vw; }
             
-            #dial-container { width: 90vw; height: 90vw; }
+            #dial-container {
+                width: 90vw;
+                height: 90vw;
+                /* UI FIX: Apply responsive margins for touch devices.
+                   - #status-container is 12vw high -> 6vw protrusion.
+                   - #start-stop-button is 18vw high -> 9vw protrusion. */
+                margin-top: 6vw;
+                margin-bottom: 9vw;
+            }
+
             #interval-timer-display { font-size: 25vw; }
             #interval-display { font-size: 6.5vw; }
             #total-time-display, #steps-display { font-size: 4.5vw; }
@@ -165,6 +174,7 @@
     <div id="orientation-lock-overlay"></div>
 
     <script>
+        // --- JavaScript is unchanged ---
         const elements = { timerDisplay: document.getElementById('interval-timer-display'), totalTimeDisplay: document.getElementById('total-time-display'), intervalDisplay: document.getElementById('interval-display'), stepsDisplay: document.getElementById('steps-display'), startStopButton: document.getElementById('start-stop-button'), debugLabel: document.getElementById('debug-label'), debugModeSwitch: document.getElementById('debug-mode'), debugModeDisplay: document.getElementById('debug-mode-display'), modalTitle: document.getElementById('modal-title'), encouragementText: document.getElementById('encouragement-text'), settingsButton: document.getElementById('settings-button'), settingsModal: document.getElementById('settings-modal'), settingsTitle: document.getElementById('settings-title'), languageLabel: document.getElementById('language-label'), languageSelect: document.getElementById('language-select'), coachingLabel: document.getElementById('coaching-label'), coachingToggle: document.getElementById('coaching-toggle'), exitAppButton: document.getElementById('exit-app-button'), statsButton: document.getElementById('stats-button'), statsModal: document.getElementById('stats-modal'), statsTitle: document.getElementById('stats-title'), statsSummary: document.getElementById('stats-summary'), multiDayChartContainer: document.getElementById('multi-day-chart-container'), encouragementModal: document.getElementById('encouragement-modal'), dialProgress: document.getElementById('dial-progress'), dialBackground: document.getElementById('dial-background'), intervalIcon: document.getElementById('interval-icon'), calendarGrid: document.getElementById('calendar-grid'), calendarMonthYear: document.getElementById('calendar-month-year'), calendarNavPrev: document.getElementById('calendar-nav-prev'), calendarNavNext: document.getElementById('calendar-nav-next'), sessionDetails: document.getElementById('session-details'), infoButton: document.getElementById('info-button'), infoModal: document.getElementById('info-modal'), infoTitle: document.getElementById('info-title'), infoBody: document.getElementById('info-body'), rotateDeviceTitle: document.getElementById('rotate-device-title') };
         const translations = { en: {}, da: {} };
         Object.assign(translations.en, {get_ready: "Get Ready", info_title: "About", steps: "steps", total_remaining: "remaining", speak_fast: "Fast Pace", speak_normal: "Normal Pace", cadence: "steps/min", last_7_days: "Last 7 Days Steps", debug_mode: "Debug Mode (60s)", test_mode_active: "Test Mode Active", exit_app: "Exit App", modal_complete: "Workout Complete!", settings: "Settings", language: "Language", voice_coaching: "Voice Coaching", stats: "Statistics", no_history: "No completed sessions yet.", total_steps: "Total Steps", fast_steps: "Fast Steps", normal_steps: "Normal Steps", streak: "Day Streak", speak_starting: "Starting workout.", speak_fast_instruction: "Begin fast pace.", speak_normal_instruction: "Begin normal pace.", speak_halfway: "Halfway there. Keep up the great work.", speak_pace_prompt: "A little faster now, let's keep the pace.", speak_complete: "Workout complete. Well done!", speak_2_min: "2 minutes remaining.", speak_1_min: "1 minute remaining.", speak_30_sec: "30 seconds.", encouragement: ["Every step is a victory.", "You are nurturing your body and soul.", "Well done!"], rotate_device_title: "Please rotate your device", info_text: `<h3>Discover Japanese Interval Walking</h3><p>This is a powerful, science-backed method that alternates between bursts of speed and periods of active recovery to transform your health.</p><h3>Your 30-Minute Workout Plan</h3><p>You will repeat a 6-minute cycle five times.</p><p><strong>1. High-Intensity (3 Min):</strong> Push your pace to 70-80% of your maximum. Breathing should be heavy.</p><p><strong>2. Recovery (3 Min):</strong> Ease back to a gentle stroll at 40-50% effort to catch your breath.</p><h3>Benefits</h3><ul><li>Boost Your Heart Health</li><li>Build Stronger Muscles</li><li>Supercharge Your Metabolism</li></ul><p>Ready to start? Let's take the first step together!</p>`, sensor_permission: "To count your steps, this app needs access to your device's motion sensors. Please 'Allow' when prompted.", sensor_denied: "Motion sensor access was denied. Step counting will be simulated. To enable real step counting, please grant permission in your browser settings.", sensor_unavailable: "Real step counting is not supported on this device/browser. Steps will be simulated."});
