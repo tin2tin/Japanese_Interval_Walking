@@ -11,6 +11,7 @@
             --ring-bg: rgba(0, 0, 0, 0.15); --ring-fast: #FFC300; --ring-normal: #87CEFA;
             --ring-off: #4F4C7A; --button-bg: #383838; --button-text-color: #ffffff;
             --icon-color: #FFFFFF; --modal-bg: #2C2C2C; --modal-text: #E0E0E0;
+            --card-bg: rgba(255, 255, 255, 0.05);
         }
 
         body {
@@ -21,48 +22,27 @@
             background-color: var(--bg-color); color: var(--text-color); -webkit-tap-highlight-color: transparent;
             overflow: hidden;
         }
+        .top-bar { position: absolute; top: 0; left: 0; right: 0; height: 70px; }
         .top-bar-icon { position: absolute; top: 25px; cursor: pointer; z-index: 100; fill: var(--icon-color); width: 24px; height: 24px;}
         #stats-button { left: 25px; }
         #settings-button { right: 25px; }
         #info-button { right: 65px; }
 
-        /* UI FIX: Ensure main container is centered */
         .main-container { flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%;}
         #dial-container { position: relative; width: 340px; height: 340px; display: flex; justify-content: center; align-items: center; }
-
-        #dial-svg {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            transform: rotate(-72deg);
-        }
-
+        #dial-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-72deg); }
         .dial-ring { fill: none; }
         #dial-background { stroke: var(--ring-bg); stroke-width: 4; }
         #dial-progress { stroke: var(--ring-fast); stroke-width: 4; stroke-linecap: round; transition: stroke 1s, stroke-dashoffset 1s linear; }
-
         #dial-content { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        
-        #status-container {
-            position: absolute;
-            top: 0; left: 50%; transform: translate(-50%, -50%);
-            height: 48px; width: 48px; z-index: 10;
-        }
+        #status-container { position: absolute; top: 0; left: 50%; transform: translate(-50%, -50%); height: 48px; width: 48px; z-index: 10; }
         #interval-icon { width: 100%; height: 100%; transition: fill 0.5s; }
-
         #interval-display { font-size: 1.5rem; font-weight: 400; color: var(--text-color); margin-bottom: -10px; }
         #interval-timer-display { font-size: 7rem; font-weight: 300; font-feature-settings: "tnum"; letter-spacing: 1px; line-height: 1.1; }
         #total-time-display { font-size: 1rem; color: var(--text-secondary); margin-top: 15px; margin-bottom: 5px; }
         #steps-display { font-size: 1rem; color: var(--text-secondary); min-height: 1.2rem; }
         #debug-mode-display { font-size: 0.9rem; color: var(--ring-fast); font-weight: bold; min-height: 1.1rem; margin-top: 2px; display: none; }
-
-        #start-stop-button {
-            position: absolute;
-            bottom: 0; left: 50%; transform: translate(-50%, 50%);
-            width: 56px; height: 56px;
-            border-radius: 50%; background-color: var(--button-bg);
-            border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 10;
-        }
+        #start-stop-button { position: absolute; bottom: 0; left: 50%; transform: translate(-50%, 50%); width: 56px; height: 56px; border-radius: 50%; background-color: var(--button-bg); border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; justify-content: center; align-items: center; z-index: 10; }
         #start-stop-button svg { fill: var(--button-text-color); width: 22px; height: 22px; }
 
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
@@ -77,15 +57,6 @@
         .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--ring-normal); }
         input:checked + .slider:before { transform: translateX(22px); }
-        
-        /* UI FIX: Center calendar header */
-        #calendar-header { display: flex; justify-content: space-between; align-items: center; }
-        #calendar-month-year { flex-grow: 1; text-align: center; }
-        
-        #calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-        .calendar-day { text-align: center; padding: 5px; border-radius: 4px; position: relative; aspect-ratio: 1 / 1; display: flex; justify-content: center; align-items: center;}
-        .day-name { font-size: 0.8rem; color: var(--text-secondary); }
-        .workout-day { background-color: var(--ring-normal); color: var(--bg-color); cursor: pointer; font-weight: bold; }
         #exit-app-button { background-color: #c0392b; color: white; border: none; padding: 10px 20px; margin-top: 20px; border-radius: 5px; cursor: pointer; font-size: 1rem; width: 100%; }
         
         #encouragement-modal .modal-content, #settings-modal .modal-content { border-top: 5px solid var(--ring-fast); }
@@ -93,6 +64,19 @@
         #stats-modal .modal-content, #info-modal .modal-content { border-top: 5px solid var(--ring-normal); }
         #stats-modal #stats-title, #info-modal #info-title { color: var(--ring-normal); }
         .modal-body h3 { color: var(--text-secondary); }
+
+        /* UI FEATURE: Card design for stats modal */
+        .stats-card { background-color: var(--card-bg); border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+        #stats-summary .stats-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        #stats-summary .stats-row:last-child { border-bottom: none; }
+        #session-details { display: none; } /* Hide by default */
+        
+        #calendar-header { display: flex; justify-content: space-between; align-items: center; }
+        #calendar-month-year { flex-grow: 1; text-align: center; }
+        #calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 10px; }
+        .calendar-day { text-align: center; padding: 5px; border-radius: 4px; position: relative; aspect-ratio: 1 / 1; display: flex; justify-content: center; align-items: center;}
+        .day-name { font-size: 0.8rem; color: var(--text-secondary); }
+        .workout-day { background-color: var(--ring-normal); color: var(--bg-color); cursor: pointer; font-weight: bold; }
 
         #gold-gradient stop:nth-child(1) { stop-color: #FFD700; }
         #gold-gradient stop:nth-child(2) { stop-color: #FFA500; }
@@ -124,17 +108,19 @@
             #calendar-header { font-size: 5vw; }
             .day-name { font-size: 3.5vw; }
             .calendar-day { font-size: 4vw; }
-            #session-details, #stats-summary { font-size: 4.5vw; }
+            .stats-card { padding: 4vw; }
+            #session-details, #stats-summary .stats-row { font-size: 4.5vw; }
 
-            /* UI FIX: Upscaled win pop-up text */
             #encouragement-modal p { font-size: 5vw; line-height: 1.5; }
         }
     </style>
 </head>
 <body>
-    <svg id="stats-button" class="top-bar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg>
-    <svg id="settings-button" class="top-bar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41H9.92 c-0.24,0-0.44,0.17-0.48,0.41L9.04,5.08C8.45,5.32,7.92,5.64,7.42,6.02L5.03,5.06C4.81,4.99,4.56,5.06,4.44,5.28L2.52,8.6 C2.41,8.8,2.46,9.07,2.64,9.21l2.03,1.58C4.62,11.06,4.6,11.37,4.6,11.69c0,0.32,0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.4,2.27 c0.04,0.24,0.24,0.41,0.48,0.41h4.16c0.24,0,0.44-0.17,0.48-0.41l0.4-2.27c0.59-0.24,1.12-0.56,1.62-0.94l2.39,0.96 c0.22,0.07,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
-    <svg id="info-button" class="top-bar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+    <div class="top-bar">
+        <svg id="stats-button" class="top-bar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg>
+        <svg id="settings-button" class="top-bar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41H9.92 c-0.24,0-0.44,0.17-0.48,0.41L9.04,5.08C8.45,5.32,7.92,5.64,7.42,6.02L5.03,5.06C4.81,4.99,4.56,5.06,4.44,5.28L2.52,8.6 C2.41,8.8,2.46,9.07,2.64,9.21l2.03,1.58C4.62,11.06,4.6,11.37,4.6,11.69c0,0.32,0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.4,2.27 c0.04,0.24,0.24,0.41,0.48,0.41h4.16c0.24,0,0.44-0.17,0.48-0.41l0.4-2.27c0.59-0.24,1.12-0.56,1.62-0.94l2.39,0.96 c0.22,0.07,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+        <svg id="info-button" class="top-bar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+    </div>
 
     <div class="main-container">
         <div id="dial-container">
@@ -157,7 +143,7 @@
 
     <div id="settings-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="settings-title"></h2><div class="modal-body"><div class="settings-row"><label id="coaching-label"></label><label class="switch"><input type="checkbox" id="coaching-toggle" checked><span class="slider"></span></label></div><div class="settings-row"><label id="language-label" for="language-select"></label><select id="language-select"><option value="en">English</option><option value="da">Dansk</option></select></div><hr><div class="settings-row" id="debug-container"><label id="debug-label"></label><label class="switch"><input type="checkbox" id="debug-mode"><span class="slider"></span></label></div><button id="exit-app-button">Exit App</button></div></div></div>
     <div id="encouragement-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="modal-title"></h2><p id="encouragement-text"></p></div></div>
-    <div id="stats-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="stats-title"></h2><div class="modal-body"><div id="stats-summary"></div><div id="multi-day-chart-container"></div><div id="calendar-header"><span id="calendar-nav-prev" class="calendar-nav">←</span><span id="calendar-month-year"></span><span id="calendar-nav-next" class="calendar-nav">→</span></div><div id="calendar-grid"></div><div id="session-details"></div></div></div></div>
+    <div id="stats-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="stats-title"></h2><div class="modal-body"><div id="stats-summary" class="stats-card"></div><div id="multi-day-chart-container" class="stats-card"></div><div id="calendar-container" class="stats-card"><div id="calendar-header"><span id="calendar-nav-prev" class="calendar-nav">←</span><span id="calendar-month-year"></span><span id="calendar-nav-next" class="calendar-nav">→</span></div><div id="calendar-grid"></div></div><div id="session-details" class="stats-card"></div></div></div></div>
     <div id="info-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2 id="info-title"></h2><div id="info-body" class="modal-body"></div></div></div>
     <div id="orientation-lock-overlay"></div>
 
@@ -202,10 +188,10 @@
         
         function loadSettings() { languageManager.init(); const savedCoaching = localStorage.getItem('coachingEnabled'); coachingEnabled = savedCoaching === null ? true : (savedCoaching === 'true'); elements.coachingToggle.checked = coachingEnabled; updateLanguageSelectState(); }
         function saveSessionHistory(s) { if (!s) return; const h = JSON.parse(localStorage.getItem('sessionHistory') || '[]'); h.push(s); localStorage.setItem('sessionHistory', JSON.stringify(h)); }
-        function calculateAndShowSummaryStats() { const history = JSON.parse(localStorage.getItem('sessionHistory') || '[]'); if (elements.multiDayChartContainer) { elements.multiDayChartContainer.innerHTML = createMultiDayStepChart(history, 7); } if (history.length === 0) { elements.statsSummary.innerHTML = `<p>${languageManager.get('no_history')}</p>`; return; } let totalSteps = 0, totalFastSteps = 0, totalNormalSteps = 0; const workoutDates = []; history.forEach(session => { totalSteps += session.totalSteps || 0; if(session.intervals) { session.intervals.forEach(interval => { const type = interval.type.toLowerCase(); const steps = interval.steps || 0; if (type.includes('fast') || type.includes('hurtig')) totalFastSteps += steps; else totalNormalSteps += steps; }); } workoutDates.push(new Date(session.date)); }); const uniqueDays = [...new Set(workoutDates.map(d => d.setHours(0,0,0,0)))].sort((a,b) => a - b); let currentStreak = 0, maxStreak = 0; if (uniqueDays.length > 0) { currentStreak = 1; maxStreak = 1; for (let i = 1; i < uniqueDays.length; i++) { if (uniqueDays[i] - uniqueDays[i-1] === 86400000) currentStreak++; else currentStreak = 1; maxStreak = Math.max(maxStreak, currentStreak); } } elements.statsSummary.innerHTML = `<div class="stats-row"><strong>${languageManager.get('total_steps')}:</strong> ${totalSteps.toLocaleString(languageManager.lang)}</div><div class="stats-row"><strong>${languageManager.get('fast_steps')}:</strong> ${totalFastSteps.toLocaleString(languageManager.lang)}</div><div class="stats-row"><strong>${languageManager.get('normal_steps')}:</strong> ${totalNormalSteps.toLocaleString(languageManager.lang)}</div><div class="stats-row"><strong>${languageManager.get('streak')}:</strong> ${maxStreak}</div>`; }
+        function calculateAndShowSummaryStats() { const history = JSON.parse(localStorage.getItem('sessionHistory') || '[]'); if (elements.multiDayChartContainer) { elements.multiDayChartContainer.innerHTML = createMultiDayStepChart(history, 7); } if (history.length === 0) { elements.statsSummary.innerHTML = `<p>${languageManager.get('no_history')}</p>`; return; } let totalSteps = 0, totalFastSteps = 0, totalNormalSteps = 0; const workoutDates = []; history.forEach(session => { totalSteps += session.totalSteps || 0; if(session.intervals) { session.intervals.forEach(interval => { const type = interval.type.toLowerCase(); const steps = interval.steps || 0; if (type.includes('fast') || type.includes('hurtig')) totalFastSteps += steps; else totalNormalSteps += steps; }); } workoutDates.push(new Date(session.date)); }); const uniqueDays = [...new Set(workoutDates.map(d => d.setHours(0,0,0,0)))].sort((a,b) => a - b); let currentStreak = 0, maxStreak = 0; if (uniqueDays.length > 0) { currentStreak = 1; maxStreak = 1; for (let i = 1; i < uniqueDays.length; i++) { if (uniqueDays[i] - uniqueDays[i-1] === 86400000) currentStreak++; else currentStreak = 1; maxStreak = Math.max(maxStreak, currentStreak); } } elements.statsSummary.innerHTML = `<div class="stats-row"><span><strong>${languageManager.get('total_steps')}</strong></span> <span>${totalSteps.toLocaleString(languageManager.lang)}</span></div><div class="stats-row"><span><strong>${languageManager.get('fast_steps')}</strong></span> <span>${totalFastSteps.toLocaleString(languageManager.lang)}</span></div><div class="stats-row"><span><strong>${languageManager.get('normal_steps')}</strong></span> <span>${totalNormalSteps.toLocaleString(languageManager.lang)}</span></div><div class="stats-row"><span><strong>${languageManager.get('streak')}</strong></span> <span>${maxStreak}</span></div>`; }
         function createMultiDayStepChart(history, numDays) { const dataByDay = {}; const today = new Date(); today.setHours(0, 0, 0, 0); for (let i = 0; i < numDays; i++) { const date = new Date(today); date.setDate(today.getDate() - i); dataByDay[date.toDateString()] = { steps: 0, date: date }; } history.forEach(session => { const sessionDate = new Date(session.date); sessionDate.setHours(0, 0, 0, 0); if (dataByDay[sessionDate.toDateString()]) dataByDay[sessionDate.toDateString()].steps += session.totalSteps || 0; }); const chartData = Object.values(dataByDay).sort((a, b) => a.date - b.date); const maxSteps = Math.max(...chartData.map(d => d.steps), 1000); const width = 300, height = 150, barWidth = width / numDays; const bars = chartData.map((data, i) => { const barHeight = (data.steps / maxSteps) * (height - 20); const x = i * barWidth, y = height - barHeight - 20; const dayLabel = data.date.toLocaleDateString(languageManager.lang, { weekday: 'short' }); return `<g><rect x="${x + barWidth * 0.1}" y="${y}" width="${barWidth * 0.8}" height="${barHeight}" fill="var(--ring-normal)" rx="2"></rect><text x="${x + barWidth / 2}" y="${height - 5}" font-size="10" fill="var(--text-secondary)" text-anchor="middle">${dayLabel}</text></g>`; }).join(''); return `<h4 style="text-align: left; margin-bottom: 5px;">${languageManager.get('last_7_days')}</h4><svg viewBox="0 0 ${width} ${height}" style="width: 100%; height: auto;">${bars}</svg>`; }
-        function showStats() { statsDate = new Date(); calculateAndShowSummaryStats(); renderCalendar(statsDate); if(elements.sessionDetails) elements.sessionDetails.innerHTML = ''; elements.statsModal.style.display = 'flex'; }
-        function showSessionDetailsForDate(date) { const history = JSON.parse(localStorage.getItem('sessionHistory') || '[]'); const sessionForDay = history.filter(s => new Date(s.date).toDateString() === date.toDateString()).pop(); if (!sessionForDay) return; const intervalDurationMinutes = (sessionForDay.duration / (getDuration() === debugDuration ? 2 : 10)) / 60; let fastSteps = 0, normalSteps = 0, fastIntervals = 0, normalIntervals = 0; sessionForDay.intervals.forEach(interval => { if (interval.type.toLowerCase().includes('fast') || interval.type.toLowerCase().includes('hurtig')) { fastSteps += interval.steps; fastIntervals++; } else { normalSteps += interval.steps; normalIntervals++; } }); const fastCadence = fastIntervals > 0 ? (fastSteps / (fastIntervals * intervalDurationMinutes)).toFixed(0) : 0; const normalCadence = normalIntervals > 0 ? (normalSteps / (normalIntervals * intervalDurationMinutes)).toFixed(0) : 0; let detailsHTML = `<h4>${date.toLocaleDateString(languageManager.lang, {weekday: 'long', day: 'numeric', month: 'long'})}</h4>`; detailsHTML += `<p>${languageManager.get('total_steps')}: ${sessionForDay.totalSteps.toLocaleString(languageManager.lang)}</p>`; detailsHTML += `<div class="cadence-container"><div class="cadence-item"><strong>${languageManager.get('speak_fast')}</strong><br>${fastCadence} ${languageManager.get('cadence')}</div><div class="cadence-item"><strong>${languageManager.get('speak_normal')}</strong><br>${normalCadence} ${languageManager.get('cadence')}</div></div>`; detailsHTML += `<div class="graph-container">${createBarChart(sessionForDay.intervals, 200, 80)}</div>`; elements.sessionDetails.innerHTML = detailsHTML; }
+        function showStats() { statsDate = new Date(); calculateAndShowSummaryStats(); renderCalendar(statsDate); if(elements.sessionDetails) elements.sessionDetails.style.display = 'none'; elements.statsModal.style.display = 'flex'; }
+        function showSessionDetailsForDate(date) { const history = JSON.parse(localStorage.getItem('sessionHistory') || '[]'); const sessionForDay = history.filter(s => new Date(s.date).toDateString() === date.toDateString()).pop(); if (!sessionForDay) return; const intervalDurationMinutes = (sessionForDay.duration / (getDuration() === debugDuration ? 2 : 10)) / 60; let fastSteps = 0, normalSteps = 0, fastIntervals = 0, normalIntervals = 0; sessionForDay.intervals.forEach(interval => { if (interval.type.toLowerCase().includes('fast') || interval.type.toLowerCase().includes('hurtig')) { fastSteps += interval.steps; fastIntervals++; } else { normalSteps += interval.steps; normalIntervals++; } }); const fastCadence = fastIntervals > 0 ? (fastSteps / (fastIntervals * intervalDurationMinutes)).toFixed(0) : 0; const normalCadence = normalIntervals > 0 ? (normalSteps / (normalIntervals * intervalDurationMinutes)).toFixed(0) : 0; let detailsHTML = `<h4>${date.toLocaleDateString(languageManager.lang, {weekday: 'long', day: 'numeric', month: 'long'})}</h4>`; detailsHTML += `<p>${languageManager.get('total_steps')}: ${sessionForDay.totalSteps.toLocaleString(languageManager.lang)}</p>`; detailsHTML += `<div class="cadence-container"><div class="cadence-item"><strong>${languageManager.get('speak_fast')}</strong><br>${fastCadence} ${languageManager.get('cadence')}</div><div class="cadence-item"><strong>${languageManager.get('speak_normal')}</strong><br>${normalCadence} ${languageManager.get('cadence')}</div></div>`; detailsHTML += `<div class="graph-container">${createBarChart(sessionForDay.intervals, 200, 80)}</div>`; elements.sessionDetails.innerHTML = detailsHTML; elements.sessionDetails.style.display = 'block'; }
         function createBarChart(intervals, w, h) { if (!intervals || intervals.length === 0) return ''; const max = Math.max(...intervals.map(i => i.steps), 1); const bw = w / intervals.length; const bars = intervals.map((v, i) => `<rect x="${i*bw}" y="${h-(v.steps/max)*h}" width="${bw*0.8}" height="${(v.steps/max)*h}" fill="${v.type.toLowerCase().includes('fast') || v.type.toLowerCase().includes('hurtig') ? 'var(--ring-fast)' : 'var(--ring-normal)'}" rx="2"/>`).join(''); return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMax meet">${bars}</svg>`; }
         function populateVoices() { voices = speechSynthesis.getVoices(); }
         function updateLanguageSelectState() { elements.languageSelect.disabled = !coachingEnabled; elements.languageLabel.style.opacity = coachingEnabled ? '1' : '0.5'; }
