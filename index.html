@@ -26,27 +26,27 @@
         #stats-button { left: 25px; }
         #settings-button { right: 25px; }
         #info-button { right: 65px; }
-
-        /* UI FIX: Use CSS Grid for more robust centering, which resolves horizontal alignment
-           bugs observed on some mobile browsers. `place-items: center` is a shorthand
-           that perfectly centers the dial both horizontally and vertically. */
+        
+        /* UI FIX: Change the main container to a positioning context. */
         .main-container {
             flex-grow: 1;
-            display: grid;
-            place-items: center;
+            position: relative; /* This is crucial for the child's absolute positioning */
             width: 100%;
         }
         
+        /* UI FIX: Use absolute positioning with transform to force perfect centering.
+           This is the most robust method and overrides browser layout bugs. */
         #dial-container {
-            position: relative;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+
             width: 340px;
             height: 340px;
-            display: flex;
+            display: flex; /* Kept for centering the internal text content */
             justify-content: center;
             align-items: center;
-            /* This vertical margin fix is still required to account for protruding elements */
-            margin-top: 24px;
-            margin-bottom: 28px;
         }
 
         #dial-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-72deg); }
@@ -114,11 +114,6 @@
             #dial-container {
                 width: 90vw;
                 height: 90vw;
-                /* Apply responsive margins for touch devices.
-                   - #status-container is 12vw high -> 6vw protrusion.
-                   - #start-stop-button is 18vw high -> 9vw protrusion. */
-                margin-top: 6vw;
-                margin-bottom: 9vw;
             }
 
             #interval-timer-display { font-size: 25vw; }
