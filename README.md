@@ -1,8 +1,7 @@
-# Japanese_Interval_Walking
-App for Japanese Interval Walking
+# Japanese Interval Walking
 
 <div align="left">
-  <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/tin2tin/Japanese_Interval_Walking/master/index.html">PLAY</a><br><br>
+  <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/tin2tin/Japanese_Interval_Walking/master/index.html">OPEN THE APP HERE</a><br><br>
 </div>
 
 A modern, touch-friendly web application designed to guide users through the scientifically-backed Japanese Interval Walking method. This app provides a clean, focused interface, pleasant audio cues, and detailed statistics to help users improve their fitness.
